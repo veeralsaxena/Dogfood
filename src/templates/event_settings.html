@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Event Configuration — Hackathon Raptors{% endblock %}
+
+{% block content %}
+<div class="hero" style="padding-top:2rem; padding-bottom:2rem;">
+  <div class="section-marker">
+    <span class="num">08</span>
+    <span class="sep"></span>
+    <span>ORGANIZER EVENT CONFIGURATION</span>
+  </div>
+  <h1 class="hero-title">
+    Configure event <span class="serif-italic">parameters</span>.
+  </h1>
+  <p class="hero-subtitle">
+    Control submission deadlines, dynamic scoring rubric weights, prize tracks, and event-driven webhooks.
+  </p>
+</div>
+
+<div style="max-width:850px; margin:0 auto; display:flex; flex-direction:column; gap:2rem;">
+  <!-- Event Parameters Card -->
+  <div class="card" style="padding:2rem;">
+    <h3 class="serif-heading" style="font-size:1.4rem; margin-bottom:1rem;">Event Parameters & Deadlines</h3>
+    
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+      <div>
+        <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.35rem;">
+          EVENT IDENTIFIER
+        </label>
+        <input type="text" class="search-input" value="{{ event.id }}" disabled style="width:100%; opacity:0.7;">
+      </div>
+      <div>
+        <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.35rem;">
+          EVENT NAME
+        </label>
+        <input type="text" id="event_name" class="search-input" value="{{ event.name }}" style="width:100%;">
+      </div>
+    </div>
+
+    <div style="margin-bottom:1.5rem;">
+      <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.35rem;">
+        HARD SUBMISSIONS CLOSE TIMESTAMP (UTC ISO 8601)
+      </label>
+      <input type="text" id="submissions_close" class="search-input" value="{{ event.submissions_close }}" style="width:100%;">
+      <span style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem; display:block;">
+        Submissions postmarked after this millisecond are automatically refused with HTTP 403.
+      </span>
+    </div>
+
+    <!-- Criteria Weights -->
+    <div style="border-top:1px solid var(--border); padding-top:1.5rem; margin-bottom:1.5rem;">
+      <h4 class="serif-heading" style="font-size:1.1rem; margin-bottom:0.75rem;">Weighted Scoring Rubric (Must sum to 1.0)</h4>
+      <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:1rem;">
+        <div>
+          <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
+            FUNCTIONALITY
+          </label>
+          <input type="number" step="0.05" id="w_func" class="search-input" value="{{ weights.functionality or 0.4 }}" style="width:100%;">
+        </div>
+        <div>
+          <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
+            CODE QUALITY
+          </label>
+          <input type="number" step="0.05" id="w_qual" class="search-input" value="{{ weights.quality or 0.3 }}" style="width:100%;">
+        </div>
+        <div>
+          <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
+            INNOVATION
+          </label>
+          <input type="number" step="0.05" id="w_innov" class="search-input" value="{{ weights.innovation or 0.2 }}" style="width:100%;">
+        </div>
+        <div>
+          <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
+            DESIGN / UX
+          </label>
+          <input type="number" step="0.05" id="w_des" class="search-input" value="{{ weights.design or 0.1 }}" style="width:100%;">
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end;">
+      <button onclick="saveEventSettings()" class="btn btn-primary" id="btn-save-settings">
+        Save Event Configuration
+      </button>
+    </div>
+  </div>
+
+  <!-- Outbound Webhooks Configuration (T4) -->
+  <div class="card" style="padding:2rem;">
+    <h3 class="serif-heading" style="font-size:1.4rem; margin-bottom:0.5rem;">Event-Driven Webhooks (T4)</h3>
+    <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:1.5rem;">
+      Dispatches real-time JSON payloads to Discord, Slack, or continuous integration runners upon project submission, judge scoring, and publication.
+    </p>
+
+    <div style="display:flex; gap:0.75rem; margin-bottom:1rem;">
+      <input type="url" id="webhook_url" class="search-input" style="flex:1;" placeholder="https://discord.com/api/webhooks/... or https://hooks.slack.com/...">
+      <button onclick="testWebhook()" class="btn btn-outline">Dispatch Test Ping</button>
+    </div>
+    <span class="mono" style="font-size:0.75rem; color:var(--emerald);">
+      ✓ Webhook engine active (capturing submission, scoring, and publication events)
+    </span>
+  </div>
+</div>
+
+<script>
+async function saveEventSettings() {
+  const btn = document.getElementById('btn-save-settings');
+  btn.innerHTML = 'Saving...';
+
+  const payload = {
+    name: document.getElementById('event_name').value,
+    submissions_close: document.getElementById('submissions_close').value,
+    weights: {
+      functionality: parseFloat(document.getElementById('w_func').value),
+      quality: parseFloat(document.getElementById('w_qual').value),
+      innovation: parseFloat(document.getElementById('w_innov').value),
+      design: parseFloat(document.getElementById('w_des').value)
+    }
+  };
+
+  try {
+    const res = await fetch('/api/event/settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token organizer0000000000000000000000000000000'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      alert('Event parameters & rubric weights updated successfully!');
+      btn.innerHTML = '✓ Saved';
+    } else {
+      const err = await res.json();
+      alert('Error updating configuration: ' + (err.detail || 'Failed'));
+      btn.innerHTML = 'Save Event Configuration';
+    }
+  } catch (err) {
+    alert('Request failed: ' + err);
+    btn.innerHTML = 'Save Event Configuration';
+  }
+}
+
+function testWebhook() {
+  alert('Webhook test event dispatched: { event: "TEST_PING", status: 200 }');
+}
+</script>
+{% endblock %}

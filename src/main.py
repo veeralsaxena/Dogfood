@@ -28,6 +28,8 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "src" / "static")), na
 # Include Routers
 app.include_router(web.router)
 app.include_router(projects.router)
+app.include_router(projects.team_router)
+app.include_router(projects.event_router)
 app.include_router(judging.router)
 app.include_router(export.router)
 app.include_router(voting.router)

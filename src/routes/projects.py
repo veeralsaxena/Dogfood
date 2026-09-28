@@ -100,3 +100,62 @@ def get_project(project_id: str):
     if not row:
         raise HTTPException(status_code=404, detail="Project not found")
     return dict(row)
+
+team_router = APIRouter(prefix="/api/teams", tags=["teams"])
+event_router = APIRouter(prefix="/api/event", tags=["event"])
+
+@team_router.post("/join/{invite_code}")
+def join_team_by_code(invite_code: str, body: dict):
+    email = body.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM teams WHERE invite_code = ?", (invite_code,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Team invite code not found")
+
+    members = json.loads(row["members"])
+    if len(members) >= 4:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Team is already full (maximum 4 members)")
+
+    if email not in members:
+        members.append(email)
+        cursor.execute("UPDATE teams SET members = ? WHERE id = ?", (json.dumps(members), row["id"]))
+        conn.commit()
+
+    conn.close()
+    log_audit("TEAM_JOINED", email, row["id"], f"Joined team {row['name']}")
+    return {"status": "success", "team_id": row["id"], "team_name": row["name"], "members": members}
+
+@event_router.post("/settings")
+def update_event_settings(settings: dict, user: UserPrincipal = Depends(require_auth)):
+    if user.role not in ("organizer", "admin"):
+        raise HTTPException(status_code=403, detail="Forbidden: Only organizers can adjust event settings")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    name = settings.get("name")
+    close_ts = settings.get("submissions_close")
+    weights = settings.get("weights")
+    weights_json = json.dumps(weights) if weights else None
+
+    if name:
+        cursor.execute("UPDATE events SET name = ?", (name,))
+    if close_ts:
+        cursor.execute("UPDATE events SET submissions_close = ?", (close_ts,))
+    if weights_json:
+        cursor.execute("UPDATE events SET weights = ?", (weights_json,))
+
+    conn.commit()
+    conn.close()
+
+    log_audit("EVENT_SETTINGS_UPDATED", user.email, "evt_01", f"Updated settings: {settings}")
+    return {"status": "updated", "settings": settings}
+
+

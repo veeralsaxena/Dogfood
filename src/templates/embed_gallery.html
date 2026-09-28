@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>Veritas Showcase Widget</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    body { padding: 1rem; background: transparent; }
+    .widget-container { max-width: 100%; }
+  </style>
+</head>
+<body>
+  <div class="widget-container">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <span class="mono" style="font-size:0.75rem; color:var(--text-muted);">
+        HACKATHON RAPTORS // VERIFIED SHOWCASE WIDGET
+      </span>
+      <span class="badge badge-emerald">{{ projects|length }} Projects</span>
+    </div>
+
+    <div class="grid-3" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:1rem;">
+      {% for p in projects[:9] %}
+        <div class="card" style="padding:1rem;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+            <span class="badge badge-purple" style="font-size:0.7rem;">{{ p.track_id }}</span>
+            <span class="mono" style="font-size:0.7rem; color:var(--text-muted);">{{ p.id }}</span>
+          </div>
+          <h4 style="font-size:1.05rem; margin-bottom:0.25rem;">{{ p.title }}</h4>
+          <p class="card-desc" style="font-size:0.8rem; margin-bottom:0.75rem;">{{ p.summary }}</p>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <a href="/projects" target="_blank" class="btn btn-outline" style="padding:0.2rem 0.5rem; font-size:0.7rem;">
+              Inspect on Portal ↗
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</body>
+</html>

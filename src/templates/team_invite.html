@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Join Team — Hackathon Raptors{% endblock %}
+
+{% block content %}
+<div class="hero" style="padding-top:3rem; padding-bottom:2rem;">
+  <div class="section-marker">
+    <span class="num">07</span>
+    <span class="sep"></span>
+    <span>TEAM COLLABORATION & INVITATION</span>
+  </div>
+  <h1 class="hero-title">
+    Join squad <span class="serif-italic">{{ team.name }}</span>.
+  </h1>
+  <p class="hero-subtitle">
+    You have been invited to collaborate with {{ team.name }} on the Dogfood 2026 hackathon. Teams are permitted up to 4 members.
+  </p>
+</div>
+
+<div style="max-width:600px; margin:0 auto;">
+  <div class="card" style="padding:2rem; text-align:center;">
+    <div style="margin-bottom:1.5rem;">
+      <span class="badge badge-purple" style="font-size:0.85rem; padding:0.35rem 0.75rem;">TEAM ID: {{ team.id }}</span>
+      <h2 class="serif-heading" style="font-size:2rem; margin-top:0.75rem;">{{ team.name }}</h2>
+    </div>
+
+    <div style="border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:1.25rem 0; margin-bottom:1.5rem; text-align:left;">
+      <h4 class="mono" style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.75rem;">Current Roster</h4>
+      <ul style="list-style:none; display:flex; flex-direction:column; gap:0.5rem;">
+        {% for member in members %}
+          <li style="display:flex; justify-content:space-between; font-size:0.9rem;">
+            <span style="color:var(--text-primary);">{{ member }}</span>
+            <span class="badge badge-emerald">Active Member</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <form onsubmit="handleJoin(event)">
+      <div style="margin-bottom:1.25rem; text-align:left;">
+        <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.35rem;">
+          YOUR EMAIL / IDENTIFIER
+        </label>
+        <input type="email" id="user-email" class="search-input" style="width:100%;" placeholder="you@example.org" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="join-btn" style="width:100%; padding:0.75rem;">
+        Accept Invitation & Join {{ team.name }}
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+async function handleJoin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('join-btn');
+  btn.innerHTML = 'Joining...';
+  btn.disabled = true;
+
+  const email = document.getElementById('user-email').value;
+
+  try {
+    const res = await fetch(`/api/teams/join/{{ team.invite_code }}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email })
+    });
+
+    if (res.ok) {
+      alert(`Success! You have joined team {{ team.name }}. Redirecting to submissions...`);
+      window.location.href = '/submit';
+    } else {
+      const err = await res.json();
+      alert('Could not join team: ' + (err.detail || 'Error'));
+      btn.innerHTML = 'Accept Invitation';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    alert('Network error: ' + err);
+    btn.innerHTML = 'Accept Invitation';
+    btn.disabled = false;
+  }
+}
+</script>
+{% endblock %}

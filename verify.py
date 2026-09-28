@@ -32,21 +32,24 @@ def verify_ed25519_sig(public_key_bytes: bytes, signature_bytes: bytes, message_
     except Exception:
         return False
 
-    # Pure Python Ed25519 implementation (Edwards25519 curve)
+    # Pure Python Ed25519 implementation (Edwards25519 curve RFC 8032)
     q = 2**255 - 19
     d = -121665 * pow(121666, q - 2, q) % q
+    I = pow(2, (q - 1) // 4, q)
     
     def inv(x):
         return pow(x, q - 2, q)
 
-    def xrecover(y):
-        xx = (y * y - 1) * inv(d * y * y + 1)
+    def decode_point(s):
+        y = int.from_bytes(s, "little") & ((1 << 255) - 1)
+        sign = (s[31] >> 7) & 1
+        xx = (y * y - 1) * inv(d * y * y + 1) % q
         x = pow(xx, (q + 3) // 8, q)
         if (x * x - xx) % q != 0:
-            x = (x * pow(2, (q - 1) // 4, q)) % q
-        if x % 2 != 0:
+            x = (x * I) % q
+        if (x % 2) != sign:
             x = q - x
-        return x
+        return (x, y)
 
     def edwards_add(P, Q):
         x1, y1 = P
@@ -65,20 +68,20 @@ def verify_ed25519_sig(public_key_bytes: bytes, signature_bytes: bytes, message_
         return Q
 
     try:
-        # Base point B
+        # Base point B (RFC 8032)
         By = 4 * inv(5) % q
-        Bx = xrecover(By)
+        Bx_sq = (By * By - 1) * inv(d * By * By + 1) % q
+        Bx = pow(Bx_sq, (q + 3) // 8, q)
+        if (Bx * Bx - Bx_sq) % q != 0:
+            Bx = (Bx * I) % q
+        if Bx % 2 != 0:
+            Bx = q - Bx
         B = (Bx, By)
 
-        A_y = int.from_bytes(public_key_bytes, "little")
-        A_x = xrecover(A_y)
-        A = (A_x, A_y)
-
+        A = decode_point(public_key_bytes)
         R_bytes = signature_bytes[:32]
         S_bytes = signature_bytes[32:]
-        R_y = int.from_bytes(R_bytes, "little")
-        R_x = xrecover(R_y)
-        R = (R_x, R_y)
+        R = decode_point(R_bytes)
         S = int.from_bytes(S_bytes, "little")
 
         h = hashlib.sha512(R_bytes + public_key_bytes + message_bytes).digest()
@@ -168,8 +171,15 @@ def recompute_normalization(raw_scores, weights, projects_list=None):
 
 def main():
     if len(sys.argv) > 1 and sys.argv[1] not in ("-h", "--help"):
-        with open(sys.argv[1], "r", encoding="utf-8") as f:
-            bundle = json.load(f)
+        target = sys.argv[1]
+        if target.startswith("http://") or target.startswith("https://"):
+            import urllib.request
+            req = urllib.request.Request(target, headers={"User-Agent": "Dogfood-Verifier/1.0"})
+            with urllib.request.urlopen(req) as resp:
+                bundle = json.loads(resp.read().decode("utf-8"))
+        else:
+            with open(target, "r", encoding="utf-8") as f:
+                bundle = json.load(f)
     else:
         bundle = json.load(sys.stdin)
 

@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Project — Hackathon Raptors{% endblock %}
+
+{% block content %}
+<div class="hero" style="padding-top:2rem; padding-bottom:2rem;">
+  <div class="section-marker">
+    <span class="num">06</span>
+    <span class="sep"></span>
+    <span>PARTICIPANT SUBMISSION CONSOLE</span>
+  </div>
+  <h1 class="hero-title">
+    Register your <span class="serif-italic">engineering</span> milestone.
+  </h1>
+  <p class="hero-subtitle">
+    Submissions lock automatically when the deadline expires. You may edit drafts until the timer reaches zero.
+  </p>
+</div>
+
+<div style="max-width:800px; margin:0 auto;">
+  <!-- Countdown Timer -->
+  <div class="card" style="margin-bottom:2rem; background:var(--bg-secondary); border-left:3px solid var(--accent); padding:1.25rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <span class="mono" style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Submissions Window</span>
+        <div style="font-weight:600; font-size:1.1rem; color:var(--text-primary); margin-top:0.25rem;">
+          Event Deadline: {{ event.submissions_close }}
+        </div>
+      </div>
+      <div id="deadline-badge" class="badge badge-amber" style="font-size:0.85rem; padding:0.4rem 0.8rem;">
+        STATUS: ENFORCED
+      </div>
+    </div>
+  </div>
+
+  <!-- Submission Form -->
+  <div class="card" style="padding:2rem;">
+    <form id="submission-form" onsubmit="handleSubmit(event)">
+      <div style="margin-bottom:1.5rem;">
+        <label class="mono" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.5rem;">
+          PROJECT TITLE *
+        </label>
+        <input type="text" id="title" class="search-input" style="width:100%; font-size:1rem;" placeholder="e.g. Quiet Hours" required>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+        <div>
+          <label class="mono" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.5rem;">
+            ASSIGNED TRACK *
+          </label>
+          <select id="track_id" class="search-input" style="width:100%;">
+            {% for trk in tracks %}
+              <option value="{{ trk.id }}">{{ trk.name }} ({{ trk.id }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="mono" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.5rem;">
+            TEAM ASSIGNMENT
+          </label>
+          <select id="team_id" class="search-input" style="width:100%;">
+            {% for tm in teams[:10] %}
+              <option value="{{ tm.id }}">{{ tm.name }} ({{ tm.id }})</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <label class="mono" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.5rem;">
+          EXECUTIVE SUMMARY (1 LINE) *
+        </label>
+        <input type="text" id="summary" class="search-input" style="width:100%;" placeholder="A concise 1-sentence technical synopsis" required>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+        <div>
+          <label class="mono" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.5rem;">
+            CODE REPOSITORY URL *
+          </label>
+          <input type="url" id="repo_url" class="search-input" style="width:100%;" placeholder="https://github.com/..." required>
+        </div>
+
+        <div>
+          <label class="mono" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.5rem;">
+            LIVE DEMO / RUNTIME URL
+          </label>
+          <input type="url" id="demo_url" class="search-input" style="width:100%;" placeholder="https://...">
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <label class="mono" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.5rem;">
+          TECHNICAL ARCHITECTURE & WRITEUP (MARKDOWN)
+        </label>
+        <textarea id="description" class="search-input" style="width:100%; height:140px; resize:vertical;" placeholder="Describe technical innovations, data model, trade-offs, and verification commands..."></textarea>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:1.5rem;">
+        <label style="display:flex; align-items:center; gap:0.5rem; color:var(--text-secondary); cursor:pointer;">
+          <input type="checkbox" id="is_draft"> Save as Draft (continue editing before freeze)
+        </label>
+
+        <button type="submit" class="btn btn-primary" id="submit-btn" style="padding:0.75rem 1.75rem;">
+          Submit to Judging Engine
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+async function handleSubmit(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  btn.innerHTML = 'Submitting...';
+  btn.disabled = true;
+
+  const payload = {
+    title: document.getElementById('title').value,
+    track_id: document.getElementById('track_id').value,
+    team_id: document.getElementById('team_id').value,
+    summary: document.getElementById('summary').value,
+    repo_url: document.getElementById('repo_url').value,
+    demo_url: document.getElementById('demo_url').value,
+    description: document.getElementById('description').value,
+    is_draft: document.getElementById('is_draft').checked
+  };
+
+  try {
+    const res = await fetch('/api/projects', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token participant00000000000000000000000000000'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      alert(`Success! Project "${data.title}" successfully recorded in system.`);
+      window.location.href = '/projects';
+    } else {
+      const err = await res.json();
+      alert(`Submission Refused: ${err.detail || 'Deadline expired or authorization missing.'}`);
+      btn.innerHTML = 'Submit to Judging Engine';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    alert('Network error: ' + err);
+    btn.innerHTML = 'Submit to Judging Engine';
+    btn.disabled = false;
+  }
+}
+</script>
+{% endblock %}

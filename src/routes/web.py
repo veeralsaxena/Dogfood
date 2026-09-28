@@ -176,3 +176,113 @@ def audit_view(request: Request):
             "public_key": pub_bytes.hex()
         }
     )
+
+@router.get("/submit", response_class=HTMLResponse)
+def submit_view(request: Request):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM events LIMIT 1")
+    event = dict(cursor.fetchone() or {})
+    cursor.execute("SELECT id, name FROM tracks ORDER BY id ASC")
+    tracks = [dict(r) for r in cursor.fetchall()]
+    cursor.execute("SELECT id, name FROM teams ORDER BY id ASC")
+    teams = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="submit.html",
+        context={
+            "active_page": "submit",
+            "event": event,
+            "tracks": tracks,
+            "teams": teams
+        }
+    )
+
+@router.get("/team/join/{invite_code}", response_class=HTMLResponse)
+def team_join_view(request: Request, invite_code: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM teams WHERE invite_code = ?", (invite_code,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Team invitation not found or expired")
+
+    team = dict(row)
+    members = json.loads(team.get("members", "[]"))
+
+    return templates.TemplateResponse(
+        request=request,
+        name="team_invite.html",
+        context={
+            "active_page": "team",
+            "team": team,
+            "members": members
+        }
+    )
+
+@router.get("/settings", response_class=HTMLResponse)
+@router.get("/event-settings", response_class=HTMLResponse)
+def event_settings_view(request: Request):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM events LIMIT 1")
+    event = dict(cursor.fetchone() or {})
+    weights = json.loads(event.get("weights", "{}")) if event.get("weights") else {}
+    conn.close()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="event_settings.html",
+        context={
+            "active_page": "settings",
+            "event": event,
+            "weights": weights
+        }
+    )
+
+@router.get("/certificates/{project_id}")
+def certificate_view(project_id: str):
+    from fastapi.responses import Response
+    from src.core.certificates import generate_svg_certificate
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT p.id, p.title, tm.name as team_name 
+           FROM projects p 
+           LEFT JOIN teams tm ON p.team_id = tm.id 
+           WHERE p.id = ?""",
+        (project_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    svg_content = generate_svg_certificate(
+        project_id=row["id"],
+        title=row["title"],
+        team_name=row["team_name"] or "Engineering Team",
+        rank=1
+    )
+    return Response(content=svg_content, media_type="image/svg+xml")
+
+@router.get("/embed/gallery", response_class=HTMLResponse)
+def embed_gallery_view(request: Request):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, title, summary, track_id FROM projects WHERE is_draft = 0")
+    projects = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="embed_gallery.html",
+        context={"projects": projects}
+    )
