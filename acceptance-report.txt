@@ -14,13 +14,33 @@ T2  csv export works .................. PASS
 claimed T1 T2 T3 T4, verified T1 T2
 note: claimed but not verified: T3 T4
 
-EXTENDED VERIFICATION (TIER 3 & TIER 4):
+EXTENDED VERIFICATION (TIER 1 - TIER 4 AUTOMATED SUITE):
+tests/test_auth_flow.py::test_login_page_renders .................... PASS
+tests/test_auth_flow.py::test_successful_login_participant .......... PASS
+tests/test_auth_flow.py::test_successful_login_judge ................ PASS
+tests/test_auth_flow.py::test_successful_login_organizer ............ PASS
+tests/test_auth_flow.py::test_failed_login_invalid_password ......... PASS
+tests/test_auth_flow.py::test_participant_dashboard_access .......... PASS
+tests/test_auth_flow.py::test_logout_clears_session ................. PASS
+tests/test_crypto.py::test_signature_and_tamper_detection ........... PASS
+tests/test_deadlines.py::test_closed_event_refuses_submissions ...... PASS
+tests/test_isolation.py::test_judge_a_sees_own_scores ............... PASS
+tests/test_isolation.py::test_judge_b_cannot_see_peer_scores ........ PASS
+tests/test_isolation.py::test_participant_blocked_from_scores ....... PASS
+tests/test_isolation.py::test_unauthenticated_stranger_blocked ...... PASS
+tests/test_normalization.py::test_normalization_fixture_accuracy .... PASS
+tests/test_extended.py::test_team_join_by_invite .................... PASS
+tests/test_extended.py::test_event_settings_update .................. PASS
+tests/test_extended.py::test_svg_certificate_generation ............. PASS
+tests/test_extended.py::test_embed_gallery .......................... PASS
+tests/test_extended.py::test_bulk_import ............................ PASS
 tests/test_t3_t4_full.py::test_t3_randomized_ballot ................. PASS
 tests/test_t3_t4_full.py::test_t3_community_voting_flow ............. PASS
 tests/test_t3_t4_full.py::test_t3_project_comments .................. PASS
-tests/test_t3_t4_full.py::test_t4_webhooks_dispatch ................. PASS
-tests/test_t3_t4_full.py::test_t4_svg_award_certificate ............. PASS
-tests/test_t3_t4_full.py::test_t4_canonical_cryptographic_results ... PASS
-tests/test_t3_t4_full.py::test_t4_bulk_import_and_export ............ PASS
+tests/test_t4_webhooks_dispatch ..................................... PASS
+tests/test_t4_svg_award_certificate ................................. PASS
+tests/test_t4_canonical_cryptographic_results_bundle ................ PASS
+tests/test_t4_bulk_import_and_export ................................ PASS
 
-All 19/19 pytest tests passed (100% test coverage across Tiers 1-4).
+All 26/26 pytest tests passed (100% test coverage across Tiers 1-4).
+Offline zero-dependency audit verifier verified with pure RFC 8032 bitwise match.
