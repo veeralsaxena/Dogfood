@@ -84,6 +84,19 @@ def war_room_view(request: Request):
     event_row = cursor.fetchone()
     weights = json.loads(event_row["weights"]) if event_row and event_row["weights"] else None
 
+    cursor.execute("SELECT id, name FROM tracks ORDER BY id ASC")
+    tracks = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("SELECT * FROM invitations ORDER BY created_at DESC LIMIT 10")
+    invitations = [dict(r) for r in cursor.fetchall()]
+    for inv in invitations:
+        inv["tracks"] = json.loads(inv["tracks"]) if inv.get("tracks") else []
+
+    cursor.execute("SELECT id, name, email, role, tracks FROM users ORDER BY role, name LIMIT 25")
+    all_users = [dict(r) for r in cursor.fetchall()]
+    for u in all_users:
+        u["tracks"] = json.loads(u["tracks"]) if u.get("tracks") else []
+
     conn.close()
 
     normalization = run_normalization(raw_scores, projects, weights)
@@ -104,6 +117,9 @@ def war_room_view(request: Request):
             "judges": judges,
             "stats": stats,
             "normalization": normalization,
+            "tracks": tracks,
+            "invitations": invitations,
+            "all_users": all_users,
             "user": user
         }
     )
@@ -491,4 +507,52 @@ def participant_dashboard_view(request: Request):
             "tracks": tracks
         }
     )
+
+@router.get("/onboard/{token}", response_class=HTMLResponse)
+def onboard_view(request: Request, token: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM invitations WHERE token = ?", (token,))
+    inv_row = cursor.fetchone()
+    cursor.execute("SELECT * FROM events LIMIT 1")
+    event_row = cursor.fetchone()
+    conn.close()
+
+    if not inv_row:
+        raise HTTPException(status_code=404, detail="Invitation link not found or expired")
+
+    inv = dict(inv_row)
+    if inv.get("used_at"):
+        raise HTTPException(status_code=400, detail="This invitation link has already been used.")
+
+    event = dict(event_row or {})
+    tracks = json.loads(inv["tracks"]) if inv.get("tracks") else []
+
+    return templates.TemplateResponse(
+        request=request,
+        name="onboard.html",
+        context={
+            "token": token,
+            "invitation": inv,
+            "tracks": tracks,
+            "event": event,
+            "user": get_current_user(request)
+        }
+    )
+
+@router.get("/profile", response_class=HTMLResponse)
+def profile_view(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="profile.html",
+        context={
+            "active_page": "profile",
+            "user": user
+        }
+    )
+
 

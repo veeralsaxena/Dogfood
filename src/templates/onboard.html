@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Accept Invitation — Veritas Platform{% endblock %}
+
+{% block content %}
+<div style="max-width: 540px; margin: 3rem auto;">
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <div class="serif-italic" style="color:var(--text-muted); font-size:1.1rem; margin-bottom:0.25rem;">[ ONBOARDING PORTAL ]</div>
+    <h1 style="font-size:2.4rem; margin-bottom:0.5rem; font-family:var(--font-serif);">Activate Your Account</h1>
+    <p style="color:var(--text-muted); font-size:0.95rem;">
+      You have been invited to join <strong>{{ event.name if event else 'Veritas Evaluation' }}</strong> as a 
+      <span class="badge {% if invitation.role == 'judge' %}badge-purple{% else %}badge-accent{% endif %}" style="text-transform:uppercase;">
+        {{ invitation.role }}
+      </span>
+    </p>
+    {% if tracks and tracks|length > 0 %}
+    <div style="margin-top:0.75rem; display:flex; justify-content:center; gap:0.5rem; flex-wrap:wrap;">
+      <span style="font-size:0.75rem; color:var(--text-muted);">Assigned Evaluation Tracks:</span>
+      {% for trk in tracks %}
+      <span class="badge badge-outline" style="font-size:0.75rem;">{{ trk }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="padding: 2.25rem; border: 1px solid var(--border-light);">
+    <form id="onboard-form" onsubmit="handleOnboard(event)">
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem; color:var(--text-secondary);">
+          Full Name
+        </label>
+        <input type="text" id="name-input" required class="input" style="width:100%;" placeholder="e.g. Elena Rostova" />
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem; color:var(--text-secondary);">
+          Email Address
+        </label>
+        <input type="email" id="email-input" required value="{{ invitation.email if invitation.email else '' }}" class="input" style="width:100%;" placeholder="name@example.org" />
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem; color:var(--text-secondary);">
+          Create Password
+        </label>
+        <input type="password" id="password-input" required minlength="6" class="input" style="width:100%;" placeholder="At least 6 characters" />
+      </div>
+
+      <div style="margin-bottom: 1.75rem;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem; color:var(--text-secondary);">
+          Confirm Password
+        </label>
+        <input type="password" id="confirm-input" required minlength="6" class="input" style="width:100%;" placeholder="Confirm password" />
+      </div>
+
+      <button type="submit" id="onboard-btn" class="btn btn-primary" style="width:100%; padding:0.75rem; font-size:0.95rem; justify-content:center;">
+        Complete Activation & Enter Workspace →
+      </button>
+
+      <div id="onboard-error" style="display:none; margin-top:1rem; padding:0.75rem; background:rgba(239, 68, 68, 0.15); border:1px solid #ef4444; border-radius:4px; color:#fca5a5; font-size:0.85rem;"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+async function handleOnboard(e) {
+  e.preventDefault();
+  const errDiv = document.getElementById("onboard-error");
+  const btn = document.getElementById("onboard-btn");
+  const name = document.getElementById("name-input").value.trim();
+  const email = document.getElementById("email-input").value.trim();
+  const password = document.getElementById("password-input").value;
+  const confirm = document.getElementById("confirm-input").value;
+
+  errDiv.style.display = "none";
+
+  if (password !== confirm) {
+    errDiv.innerText = "Passwords do not match.";
+    errDiv.style.display = "block";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerText = "Activating Account...";
+
+  try {
+    const res = await fetch("/api/auth/onboard", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token: "{{ token }}",
+        name: name,
+        email: email,
+        password: password
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      if (data.token) {
+        localStorage.setItem("auth_token", "Token " + data.token);
+      }
+      window.location.href = data.redirect_url || "/projects";
+    } else {
+      errDiv.innerText = data.detail || "Account activation failed.";
+      errDiv.style.display = "block";
+      btn.disabled = false;
+      btn.innerText = "Complete Activation & Enter Workspace →";
+    }
+  } catch (err) {
+    errDiv.innerText = "Network error: " + err.message;
+    errDiv.style.display = "block";
+    btn.disabled = false;
+    btn.innerText = "Complete Activation & Enter Workspace →";
+  }
+}
+</script>
+{% endblock %}

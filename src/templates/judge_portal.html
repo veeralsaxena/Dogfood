@@ -98,7 +98,10 @@
               <input type="text" id="comment-{{ p.id }}" class="search-input" style="width:100%;" placeholder="Confidential review feedback (visible only to organizers & author post-freeze)...">
             </div>
 
-            <div style="display:flex; justify-content:flex-end;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="font-family:var(--font-mono); font-size:0.9rem;">
+                Weighted Score: <strong id="weighted-total-{{ p.id }}" style="color:var(--accent);">3.80</strong> <span style="color:var(--text-muted); font-size:0.75rem;">/ 5.00</span>
+              </div>
               <button type="submit" class="btn btn-primary" id="btn-score-{{ p.id }}">
                 Save Evaluation Score
               </button>
@@ -111,6 +114,26 @@
 </div>
 
 <script>
+function updateWeightedScore(projectId) {
+  const f = parseFloat(document.getElementById(`crit-func-${projectId}`).value) * 0.4;
+  const q = parseFloat(document.getElementById(`crit-qual-${projectId}`).value) * 0.3;
+  const i = parseFloat(document.getElementById(`crit-innov-${projectId}`).value) * 0.2;
+  const d = parseFloat(document.getElementById(`crit-des-${projectId}`).value) * 0.1;
+  const total = (f + q + i + d).toFixed(2);
+  const el = document.getElementById(`weighted-total-${projectId}`);
+  if (el) el.innerText = total;
+}
+
+// Attach listeners
+document.addEventListener("DOMContentLoaded", () => {
+  {% for p in projects[:6] %}
+    ['crit-func-{{ p.id }}', 'crit-qual-{{ p.id }}', 'crit-innov-{{ p.id }}', 'crit-des-{{ p.id }}'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', () => updateWeightedScore('{{ p.id }}'));
+    });
+  {% endfor %}
+});
+
 async function handleScoreSubmit(e, projectId) {
   e.preventDefault();
   const btn = document.getElementById(`btn-score-${projectId}`);
@@ -124,12 +147,14 @@ async function handleScoreSubmit(e, projectId) {
   };
   const comment = document.getElementById(`comment-${projectId}`).value;
 
+  const token = localStorage.getItem('auth_token') || 'Token judgea0000000000000000000000000000000000';
+
   try {
     const res = await fetch('/api/judge/scores', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Token judgea0000000000000000000000000000000000'
+        'Authorization': token
       },
       body: JSON.stringify({
         project_id: projectId,

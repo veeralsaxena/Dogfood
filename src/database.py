@@ -113,6 +113,18 @@ def init_db():
         public_key_hex TEXT NOT NULL,
         published_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS invitations (
+        token TEXT PRIMARY KEY,
+        role TEXT NOT NULL,
+        email TEXT,
+        tracks TEXT,
+        team_id TEXT,
+        created_by TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        used_at TEXT,
+        expires_at TEXT
+    );
     """)
     conn.commit()
     try:

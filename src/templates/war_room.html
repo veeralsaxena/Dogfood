@@ -149,7 +149,226 @@
   </div>
 </div>
 
+<!-- Credential & Access Management (Organizer Control) -->
+<div style="margin-bottom:2.5rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <div>
+      <h3 class="serif-heading" style="font-size:1.4rem;">Credential & Access Management</h3>
+      <p style="color:var(--text-muted); font-size:0.85rem;">
+        Generate single-use cryptographic invitation links for incoming judges and participants.
+      </p>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns: 1fr 1.8fr; gap:1.5rem; align-items:start;">
+    <!-- Generate Invite Card -->
+    <div class="card" style="padding:1.5rem;">
+      <h4 style="font-size:1.05rem; font-family:var(--font-serif); margin-bottom:1rem;">Generate Onboarding Link</h4>
+      <form id="invite-form" onsubmit="handleGenerateInvite(event)">
+        <div style="margin-bottom:1rem;">
+          <label style="display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">
+            Assign Role
+          </label>
+          <select id="invite-role" class="input" style="width:100%;" onchange="toggleTrackSelect()">
+            <option value="judge">Judge (Evaluator)</option>
+            <option value="participant">Participant (Builder)</option>
+          </select>
+        </div>
+
+        <div id="track-select-group" style="margin-bottom:1rem;">
+          <label style="display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">
+            Assigned Track (For Judge)
+          </label>
+          <select id="invite-track" class="input" style="width:100%;">
+            <option value="">All Tracks (Global Judge)</option>
+            {% for trk in tracks %}
+            <option value="{{ trk.id }}">{{ trk.name }} ({{ trk.id }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div style="margin-bottom:1.25rem;">
+          <label style="display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">
+            Target Email (Optional)
+          </label>
+          <input type="email" id="invite-email" class="input" style="width:100%;" placeholder="e.g. expert@domain.org" />
+        </div>
+
+        <button type="submit" id="gen-btn" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.6rem;">
+          Create Invitation Link →
+        </button>
+      </form>
+
+      <div id="invite-result" style="display:none; margin-top:1.25rem; padding:1rem; background:var(--bg-secondary); border:1px solid var(--border); border-radius:4px;">
+        <div style="font-size:0.75rem; text-transform:uppercase; color:var(--emerald); font-weight:700; margin-bottom:0.35rem;">
+          ✓ Invitation Generated
+        </div>
+        <input type="text" readonly id="generated-url-input" class="input" style="width:100%; font-family:var(--font-mono); font-size:0.8rem; margin-bottom:0.5rem;" />
+        <button onclick="copyGeneratedUrl()" class="btn btn-outline" style="width:100%; justify-content:center; font-size:0.8rem; padding:0.4rem;">
+          Copy Onboarding Link
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Invitations & Recent Users -->
+    <div>
+      <div class="card" style="padding:1.5rem; margin-bottom:1.5rem;">
+        <h4 style="font-size:1.05rem; font-family:var(--font-serif); margin-bottom:0.75rem;">Recent Generated Invitations</h4>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Token</th>
+                <th>Role</th>
+                <th>Tracks</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inv in invitations %}
+              <tr>
+                <td class="mono" style="font-size:0.8rem;">{{ inv.token }}</td>
+                <td><span class="badge {% if inv.role == 'judge' %}badge-purple{% else %}badge-accent{% endif %}">{{ inv.role }}</span></td>
+                <td>{{ inv.tracks|join(', ') if inv.tracks else 'All' }}</td>
+                <td>
+                  {% if inv.used_at %}
+                    <span class="badge" style="color:var(--text-muted); background:var(--bg-secondary);">Claimed</span>
+                  {% else %}
+                    <span class="badge badge-emerald">Active</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if not inv.used_at %}
+                    <button onclick="navigator.clipboard.writeText(window.location.origin + '/onboard/{{ inv.token }}'); alert('Link copied!');" class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:0.75rem;">
+                      Copy
+                    </button>
+                  {% else %}
+                    <span style="color:var(--text-muted); font-size:0.75rem;">Used</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No custom invitations generated yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Active Users & Password Reset -->
+      <div class="card" style="padding:1.5rem;">
+        <h4 style="font-size:1.05rem; font-family:var(--font-serif); margin-bottom:0.75rem;">User Directory & Credentials</h4>
+        <div class="table-wrapper" style="max-height:250px; overflow-y:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Name / ID</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in all_users %}
+              <tr>
+                <td><strong>{{ u.name }}</strong> <span class="mono" style="font-size:0.7rem; color:var(--text-muted);">({{ u.id }})</span></td>
+                <td style="font-size:0.85rem;">{{ u.email }}</td>
+                <td><span class="badge {% if u.role == 'organizer' %}badge-emerald{% elif u.role == 'judge' %}badge-purple{% else %}badge-accent{% endif %}">{{ u.role }}</span></td>
+                <td>
+                  <button onclick="resetPassword('{{ u.id }}', '{{ u.email }}')" class="btn btn-outline" style="padding:0.2rem 0.5rem; font-size:0.75rem;">
+                    Reset PW
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+function toggleTrackSelect() {
+  const role = document.getElementById('invite-role').value;
+  document.getElementById('track-select-group').style.display = role === 'judge' ? 'block' : 'none';
+}
+
+async function handleGenerateInvite(e) {
+  e.preventDefault();
+  const btn = document.getElementById('gen-btn');
+  const role = document.getElementById('invite-role').value;
+  const track = document.getElementById('invite-track').value;
+  const email = document.getElementById('invite-email').value.trim();
+
+  btn.disabled = true;
+  btn.innerText = 'Creating Link...';
+
+  const tracks = (role === 'judge' && track) ? [track] : [];
+
+  try {
+    const res = await fetch('/api/organizer/invites', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token organizer0000000000000000000000000000000'
+      },
+      body: JSON.stringify({
+        role: role,
+        email: email || null,
+        tracks: tracks
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.status === 'success') {
+      const fullUrl = window.location.origin + data.invite_url;
+      document.getElementById('generated-url-input').value = fullUrl;
+      document.getElementById('invite-result').style.display = 'block';
+    } else {
+      alert(data.detail || 'Failed to create invitation');
+    }
+  } catch (err) {
+    alert('Network error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerText = 'Create Invitation Link →';
+  }
+}
+
+function copyGeneratedUrl() {
+  const inp = document.getElementById('generated-url-input');
+  inp.select();
+  navigator.clipboard.writeText(inp.value);
+  alert('Onboarding link copied to clipboard:\n' + inp.value);
+}
+
+async function resetPassword(userId, email) {
+  if (!confirm(`Are you sure you want to reset password for ${email} to default (password123)?`)) {
+    return;
+  }
+  try {
+    const res = await fetch(`/api/organizer/users/${userId}/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token organizer0000000000000000000000000000000'
+      },
+      body: JSON.stringify({ new_password: 'password123' })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message || 'Password reset to password123');
+    } else {
+      alert(data.detail || 'Reset failed');
+    }
+  } catch (e) {
+    alert('Reset failed: ' + e);
+  }
+}
+
 async function publishResults() {
   const btn = document.getElementById('publish-btn');
   btn.innerHTML = 'Signing with Ed25519...';

@@ -6,8 +6,8 @@
 base_url = "http://localhost:8080"
 
 [tiers]
-claimed = ["T1", "T2", "T3", "T4"]
-pitch = "Enterprise-grade, 100% offline air-gapped hackathon platform (Veritas) with raptors.dev editorial aesthetic, dual-engine judging (Empirical Bayes + Bradley-Terry), anti-Sybil randomized community voting, OpenAPI 3.1 REST API, outbound webhooks, dynamic SVG award certificates, and trustless Ed25519 cryptographic results verification."
+claimed = ["T1", "T2"]
+pitch = "Enterprise-grade, 100% offline self-contained competitive evaluation platform (Veritas) with dual-engine judging (Empirical Bayes + Bradley-Terry), magic onboarding links, role-segregated workspaces, Fisher-Yates anti-Sybil voting, dynamic SVG award certificates, and pure RFC 8032 Ed25519 cryptographic results verification."
 
 [auth]
 organizer   = "Authorization: Token organizer0000000000000000000000000000000"

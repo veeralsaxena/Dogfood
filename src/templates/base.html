@@ -75,10 +75,10 @@
     <!-- Right Controls: Profile / Login & Theme Toggle -->
     <div style="display:flex; align-items:center; gap:0.75rem;">
       {% if user and user.role != 'visitor' %}
-        <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; font-family:var(--font-mono); color:var(--text-secondary); background:var(--bg-secondary); padding:0.35rem 0.75rem; border:1px solid var(--border); border-radius:4px;">
+        <a href="/profile" style="text-decoration:none; display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; font-family:var(--font-mono); color:var(--text-secondary); background:var(--bg-secondary); padding:0.35rem 0.75rem; border:1px solid var(--border); border-radius:4px;" title="Account Profile & Settings">
           <span>{{ user.name }}</span>
           <span class="badge badge-accent" style="font-size:0.65rem; padding:0.15rem 0.4rem;">{{ user.role }}</span>
-        </div>
+        </a>
         <a href="/logout" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.75rem;">
           Sign Out
         </a>

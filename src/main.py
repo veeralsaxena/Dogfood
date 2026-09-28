@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from src.config import BASE_DIR
 from src.database import init_db
-from src.routes import web, projects, judging, export, voting
+from src.routes import web, projects, judging, export, voting, auth_admin
 
 app = FastAPI(
     title="Hackathon Raptors Dogfood Platform",
@@ -33,6 +33,7 @@ app.include_router(projects.event_router)
 app.include_router(judging.router)
 app.include_router(export.router)
 app.include_router(voting.router)
+app.include_router(auth_admin.router)
 
 @app.on_event("startup")
 def on_startup():

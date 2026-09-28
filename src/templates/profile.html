@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Account Profile — Veritas Platform{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 3rem auto;">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 2rem;">
+    <div>
+      <div class="serif-italic" style="color:var(--text-muted); font-size:1.1rem; margin-bottom:0.25rem;">[ USER PROFILE ]</div>
+      <h1 style="font-size:2.4rem; margin-bottom:0.5rem; font-family:var(--font-serif);">Account Settings</h1>
+      <p style="color:var(--text-muted); font-size:0.95rem;">
+        Manage your security credentials and personal settings.
+      </p>
+    </div>
+    <span class="badge {% if user.role == 'judge' %}badge-purple{% elif user.role == 'organizer' %}badge-emerald{% else %}badge-accent{% endif %}" style="text-transform:uppercase; font-size:0.85rem; padding:0.4rem 0.8rem;">
+      {{ user.role }}
+    </span>
+  </div>
+
+  <!-- Profile Details Card -->
+  <div class="card" style="margin-bottom: 1.5rem; padding: 1.75rem;">
+    <h3 style="font-size:1.1rem; font-family:var(--font-serif); margin-bottom:1.25rem;">Identity Information</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem; font-size:0.9rem;">
+      <div>
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.25rem;">Display Name</div>
+        <div style="font-weight:600;">{{ user.name }}</div>
+      </div>
+      <div>
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.25rem;">Email Address</div>
+        <div style="font-weight:600;">{{ user.email }}</div>
+      </div>
+      <div>
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.25rem;">Account Identifier</div>
+        <div style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-secondary);">{{ user.id }}</div>
+      </div>
+      <div>
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.25rem;">Assigned Tracks</div>
+        <div>
+          {% if user.tracks and user.tracks|length > 0 %}
+            {% for trk in user.tracks %}
+            <span class="badge badge-outline" style="font-size:0.7rem;">{{ trk }}</span>
+            {% endfor %}
+          {% else %}
+            <span style="color:var(--text-muted); font-size:0.8rem;">All tracks</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Card -->
+  <div class="card" style="padding: 1.75rem;">
+    <h3 style="font-size:1.1rem; font-family:var(--font-serif); margin-bottom:1.25rem;">Security Credentials</h3>
+    <form id="password-form" onsubmit="handleChangePassword(event)">
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem; color:var(--text-secondary);">
+          Current Password
+        </label>
+        <input type="password" id="old-pw-input" required class="input" style="width:100%;" placeholder="Enter current password" />
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem; color:var(--text-secondary);">
+          New Password
+        </label>
+        <input type="password" id="new-pw-input" required minlength="6" class="input" style="width:100%;" placeholder="Enter new password (min 6 chars)" />
+      </div>
+
+      <div style="margin-bottom: 1.5rem;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem; color:var(--text-secondary);">
+          Confirm New Password
+        </label>
+        <input type="password" id="confirm-pw-input" required minlength="6" class="input" style="width:100%;" placeholder="Confirm new password" />
+      </div>
+
+      <button type="submit" id="pw-btn" class="btn btn-primary" style="padding:0.65rem 1.25rem;">
+        Update Password
+      </button>
+
+      <div id="pw-status" style="display:none; margin-top:1rem; padding:0.75rem; border-radius:4px; font-size:0.85rem;"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+async function handleChangePassword(e) {
+  e.preventDefault();
+  const statusDiv = document.getElementById("pw-status");
+  const btn = document.getElementById("pw-btn");
+  const oldPw = document.getElementById("old-pw-input").value;
+  const newPw = document.getElementById("new-pw-input").value;
+  const confirmPw = document.getElementById("confirm-pw-input").value;
+
+  statusDiv.style.display = "none";
+
+  if (newPw !== confirmPw) {
+    statusDiv.innerText = "New passwords do not match.";
+    statusDiv.style.background = "rgba(239, 68, 68, 0.15)";
+    statusDiv.style.border = "1px solid #ef4444";
+    statusDiv.style.color = "#fca5a5";
+    statusDiv.style.display = "block";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerText = "Updating...";
+
+  try {
+    const res = await fetch("/api/auth/change-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": localStorage.getItem("auth_token") || ""
+      },
+      body: JSON.stringify({
+        old_password: oldPw,
+        new_password: newPw
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      statusDiv.innerText = "✓ Password updated successfully.";
+      statusDiv.style.background = "rgba(16, 185, 129, 0.15)";
+      statusDiv.style.border = "1px solid #10b981";
+      statusDiv.style.color = "#6ee7b7";
+      statusDiv.style.display = "block";
+      document.getElementById("password-form").reset();
+    } else {
+      statusDiv.innerText = data.detail || "Failed to update password.";
+      statusDiv.style.background = "rgba(239, 68, 68, 0.15)";
+      statusDiv.style.border = "1px solid #ef4444";
+      statusDiv.style.color = "#fca5a5";
+      statusDiv.style.display = "block";
+    }
+  } catch (err) {
+    statusDiv.innerText = "Network error: " + err.message;
+    statusDiv.style.background = "rgba(239, 68, 68, 0.15)";
+    statusDiv.style.border = "1px solid #ef4444";
+    statusDiv.style.color = "#fca5a5";
+    statusDiv.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "Update Password";
+  }
+}
+</script>
+{% endblock %}
