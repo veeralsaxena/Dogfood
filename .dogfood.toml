@@ -1,0 +1,23 @@
+# .dogfood.toml
+# Points the official acceptance checker at this portal. Run:
+#   python3 spec/run.py .dogfood.toml
+
+[portal]
+base_url = "http://localhost:8080"
+
+[tiers]
+claimed = ["T1", "T2"]
+pitch = "A self-hostable, air-gapped hackathon platform with raptors.dev editorial aesthetic, verifiable Ed25519 judging math, and strict backend role isolation."
+
+[auth]
+organizer   = "Authorization: Token organizer0000000000000000000000000000000"
+judge_a     = "Authorization: Token judgea0000000000000000000000000000000000"
+judge_b     = "Authorization: Token judgeb0000000000000000000000000000000000"
+participant = "Authorization: Token participant00000000000000000000000000000"
+
+[routes]
+gallery      = "/projects"
+submit       = "/api/projects"
+judge_scores = "/api/judge/scores"
+peer_scores  = "/api/judge/scores?judge=judge_a"
+csv_export   = "/api/export/results.csv"
