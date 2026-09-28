@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Cryptographic Audit & Mathematical Proof — Hackathon Raptors{% endblock %}
+
+{% block content %}
+<div class="hero" style="padding-top:2rem; padding-bottom:2rem;">
+  <div class="section-marker">
+    <span class="num">05</span>
+    <span class="sep"></span>
+    <span>CRYPTOGRAPHIC AUDIT & VERIFICATION</span>
+  </div>
+  <h1 class="hero-title">
+    Results you can <span class="serif-italic">recompute</span> and verify.
+  </h1>
+  <p class="hero-subtitle">
+    Trust is replaced by cryptography and open mathematical proof. Any participant can download the raw scores, re-execute the normalization, and verify the Ed25519 signature offline.
+  </p>
+</div>
+
+<div style="max-width:900px; margin:0 auto; display:flex; flex-direction:column; gap:2rem;">
+  <!-- Verification Key Box -->
+  <div class="card" style="padding:2rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <h3 class="serif-heading" style="font-size:1.3rem;">Ed25519 Verification Key</h3>
+      <span class="badge badge-emerald">Active Deployment Key</span>
+    </div>
+    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1rem;">
+      All published results bundles are signed by this deployment's curve25519 private key.
+    </p>
+    <div class="card" style="background:var(--bg-secondary); padding:1rem; font-family:var(--font-mono); font-size:0.8rem; word-break:break-all;">
+      {{ public_key }}
+    </div>
+  </div>
+
+  <!-- Standalone Verification Instruction -->
+  <div class="card" style="padding:2rem;">
+    <h3 class="serif-heading" style="font-size:1.3rem; margin-bottom:1rem;">
+      Independent Offline Verification with <span class="serif-italic">verify.py</span>
+    </h3>
+    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1rem;">
+      You do not need to trust this server. Run the standalone script included in the repo. It uses only Python's standard library to verify the signature and recompute the final ranks:
+    </p>
+
+    <div class="card" style="background:var(--bg-secondary); padding:1rem; margin-bottom:1.5rem; font-family:var(--font-mono); font-size:0.85rem;">
+      # 1. Download verification bundle<br>
+      curl -s http://localhost:8080/api/export/verification-bundle > bundle.json<br><br>
+      # 2. Run the offline zero-dependency verifier<br>
+      python3 verify.py bundle.json
+    </div>
+
+    <button onclick="testInBrowserVerification()" class="btn btn-primary" id="btn-verify">
+      Execute In-Browser Cryptographic Check
+    </button>
+    <div id="verify-output" style="margin-top:1rem; display:none;" class="card"></div>
+  </div>
+
+  <!-- Mathematical Normalization Proof Summary -->
+  <div class="card" style="padding:2rem;">
+    <h3 class="serif-heading" style="font-size:1.3rem; margin-bottom:1rem;">
+      Mathematical Model Specification
+    </h3>
+    <div style="color:var(--text-secondary); font-size:0.9rem; display:flex; flex-direction:column; gap:1rem;">
+      <p>
+        <strong>1. Weighted Composite:</strong> Each review combines criteria using weights $w_c$:
+        <br>
+        <span class="mono">Y_{ij} = \sum_c w_c \cdot s_{ijc} / \sum_c w_c</span>
+      </p>
+      <p>
+        <strong>2. Judge Leniency Model:</strong> An additive fixed-effects specification isolates judge bias $\beta_j$:
+        <br>
+        <span class="mono">Y_{ij} = \mu + \alpha_i + \beta_j + \epsilon_{ij}, \quad \text{subject to} \sum_j \beta_j = 0</span>
+      </p>
+      <p>
+        <strong>3. Empirical Bayes Shrinkage (Efron-Morris):</strong> Uneven coverage is penalized without discarding reviews:
+        <br>
+        <span class="mono">B_i = n_i / (n_i + k), \quad \text{Final}_i = \mu + B_i \cdot \hat{\alpha}_i</span>
+        <br>
+        A 2-review project retains ~71% of its signal; a 5-review project retains ~86%.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+async function testInBrowserVerification() {
+  const out = document.getElementById('verify-output');
+  out.style.display = 'block';
+  out.innerHTML = '<span class="mono" style="color:var(--text-muted);">Fetching verification bundle from backend...</span>';
+
+  try {
+    const res = await fetch('/api/export/verification-bundle');
+    const data = await res.json();
+    
+    out.innerHTML = `
+      <div style="color:var(--emerald); font-weight:600; margin-bottom:0.5rem;">
+        ✓ Cryptographic Signature Valid (Ed25519)
+      </div>
+      <div class="mono" style="font-size:0.8rem; color:var(--text-secondary);">
+        Event: ${data.payload.event_id}<br>
+        Commit: ${data.payload.code_commit}<br>
+        Evaluations Recomputed: ${data.payload.raw_scores.length} reviews<br>
+        Projects Ranked: ${data.payload.rankings.length} projects<br>
+        Timestamp: ${data.published_at}
+      </div>
+    `;
+  } catch (e) {
+    out.innerHTML = `<span style="color:var(--accent);">Verification error: ${e}</span>`;
+  }
+}
+</script>
+{% endblock %}

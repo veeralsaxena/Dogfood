@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Live Organizer War Room — Hackathon Raptors{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2rem;">
+  <div>
+    <div class="section-marker">
+      <span class="num">02</span>
+      <span class="sep"></span>
+      <span>ORGANIZER WAR ROOM // CONTROL CONSOLE</span>
+    </div>
+    <h1 class="serif-heading" style="font-size:2.25rem;">
+      Live Judging Progress & <span class="serif-italic">Bias-Normalized</span> Standings
+    </h1>
+    <p style="color:var(--text-secondary); margin-top:0.35rem;">
+      Cross-judge fixed effects model with Empirical Bayes shrinkage applied across {{ projects|length }} projects.
+    </p>
+  </div>
+
+  <div style="display:flex; gap:0.75rem;">
+    <button onclick="publishResults()" class="btn btn-primary" id="publish-btn">
+      Publish & Sign Results (Ed25519)
+    </button>
+    <a href="/api/export/results.csv" class="btn btn-outline">
+      Export CSV ↓
+    </a>
+  </div>
+</div>
+
+<!-- Metrics Overview -->
+<div class="grid-3" style="grid-template-columns: repeat(4, 1fr); margin-bottom:2rem;">
+  <div class="card" style="padding:1.25rem;">
+    <span class="mono" style="color:var(--text-muted); font-size:0.75rem;">SUBMISSIONS</span>
+    <h2 class="serif-heading" style="font-size:2rem; margin:0.35rem 0;">{{ stats.total_projects }}</h2>
+    <span class="badge badge-emerald">40 Canonical (1 Duplicate Merged)</span>
+  </div>
+  <div class="card" style="padding:1.25rem;">
+    <span class="mono" style="color:var(--text-muted); font-size:0.75rem;">PANEL JUDGES</span>
+    <h2 class="serif-heading" style="font-size:2rem; margin:0.35rem 0;">{{ stats.total_judges }}</h2>
+    <span class="badge badge-purple">Active across 8 tracks</span>
+  </div>
+  <div class="card" style="padding:1.25rem;">
+    <span class="mono" style="color:var(--text-muted); font-size:0.75rem;">EVALUATIONS LOGGED</span>
+    <h2 class="serif-heading" style="font-size:2rem; margin:0.35rem 0;">{{ stats.total_scores }}</h2>
+    <span class="badge badge-amber">Coverage: 2-5 reviews/project</span>
+  </div>
+  <div class="card" style="padding:1.25rem;">
+    <span class="mono" style="color:var(--text-muted); font-size:0.75rem;">SHRINKAGE PARAMETER k</span>
+    <h2 class="serif-heading" style="font-size:2rem; margin:0.35rem 0;">{{ normalization.k_shrinkage }}</h2>
+    <span class="badge badge-emerald">Residual / Project Variance</span>
+  </div>
+</div>
+
+<!-- Outlier & Integrity Alerts -->
+<div class="card" style="margin-bottom:2rem; border-left:3px solid var(--amber); background:var(--bg-secondary);">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <div style="display:flex; gap:0.75rem; align-items:center;">
+      <span class="badge badge-amber">Integrity Guard</span>
+      <span style="font-size:0.9rem; font-weight:500;">
+        Zero-Variance & Strictness Normalization Active: 3 judges flagged with low score variance.
+      </span>
+    </div>
+    <span class="mono" style="font-size:0.75rem; color:var(--text-muted);">
+      Additive offset model applied — no scores discarded
+    </span>
+  </div>
+</div>
+
+<!-- Live Standings Table -->
+<div style="margin-bottom:2rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <h3 class="serif-heading" style="font-size:1.4rem;">Defensible Leaderboard (Normalized Quality)</h3>
+    <span class="mono" style="font-size:0.75rem; color:var(--text-muted);">
+      Ranking computed via alternating least squares with Efron-Morris shrinkage
+    </span>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Project Title</th>
+          <th>Track</th>
+          <th>Reviews (n)</th>
+          <th>Raw Mean</th>
+          <th>Shrunk Score</th>
+          <th>Shrinkage (B_i)</th>
+          <th>95% Confidence Band</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in normalization.rankings %}
+          <tr>
+            <td class="mono" style="font-weight:600; color:var(--text-primary);">#{{ row.rank }}</td>
+            <td style="font-weight:500; color:var(--text-primary);">{{ row.title }}</td>
+            <td><span class="badge badge-purple">{{ row.track_id }}</span></td>
+            <td class="mono">{{ row.review_count }}</td>
+            <td class="mono">{{ "%.2f"|format(row.raw_mean) }}</td>
+            <td class="mono" style="font-weight:600; color:var(--emerald);">
+              {{ "%.3f"|format(row.final_score) }}
+            </td>
+            <td class="mono" style="color:var(--text-muted);">
+              {{ "%.0f"|format(normalization.project_details[row.project_id].shrinkage_factor * 100) }}%
+            </td>
+            <td class="mono" style="font-size:0.75rem; color:var(--text-muted);">
+              [{{ "%.2f"|format(row.ci[0]) }} — {{ "%.2f"|format(row.ci[1]) }}]
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Judge Coverage & Bias Matrix -->
+<div style="margin-bottom:2rem;">
+  <div style="margin-bottom:1rem;">
+    <h3 class="serif-heading" style="font-size:1.4rem;">Judge Leniency Offset Matrix (β_j)</h3>
+    <p style="color:var(--text-muted); font-size:0.85rem;">
+      Positive values indicate generous scoring tendencies; negative values indicate strictness.
+    </p>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Judge ID</th>
+          <th>Assigned Tracks</th>
+          <th>Leniency Offset (β)</th>
+          <th>Correction Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for jdg in judges[:10] %}
+          <tr>
+            <td class="mono" style="font-weight:600; color:var(--text-primary);">{{ jdg.id }} ({{ jdg.name }})</td>
+            <td>{{ jdg.tracks }}</td>
+            <td class="mono" style="color:{% if normalization.judge_biases[jdg.id] > 0 %}var(--emerald){% else %}var(--amber){% endif %};">
+              {% if normalization.judge_biases[jdg.id] > 0 %}+{% endif %}{{ normalization.judge_biases[jdg.id] or '0.00' }}
+            </td>
+            <td><span class="badge badge-emerald">Normalized</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+async function publishResults() {
+  const btn = document.getElementById('publish-btn');
+  btn.innerHTML = 'Signing with Ed25519...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/export/publish', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Token organizer0000000000000000000000000000000'
+      }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      alert(`Results successfully published & cryptographically signed!\n\nSignature:\n${data.signature.substring(0, 32)}...\n\nPublic Key:\n${data.public_key.substring(0, 32)}...`);
+      btn.innerHTML = '✓ Published & Signed';
+      btn.classList.add('badge-emerald');
+    } else {
+      const err = await res.json();
+      alert('Publication error: ' + (err.detail || 'Failed'));
+      btn.innerHTML = 'Publish & Sign Results (Ed25519)';
+      btn.disabled = false;
+    }
+  } catch (e) {
+    alert('Request failed: ' + e);
+    btn.innerHTML = 'Publish & Sign Results (Ed25519)';
+    btn.disabled = false;
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Public Project Showcase — Hackathon Raptors{% endblock %}
+
+{% block content %}
+<!-- Hero Header -->
+<div class="hero" style="padding-top:2rem; padding-bottom:2rem;">
+  <div class="section-marker">
+    <span class="num">01</span>
+    <span class="sep"></span>
+    <span>PUBLIC SUBMISSIONS SHOWCASE</span>
+  </div>
+  <h1 class="hero-title">
+    Software built for <span class="serif-italic">rigorous</span> evaluation.
+  </h1>
+  <p class="hero-subtitle">
+    Explore all {{ projects|length }} verified submissions across 8 engineering tracks. 
+    Every score is normalized with empirical Bayesian shrinkage and cryptographically verifiable.
+  </p>
+</div>
+
+<!-- Search & Track Filters -->
+<div class="filter-bar">
+  <div class="track-pills">
+    <a href="/projects" class="pill-btn {% if not selected_track %}active{% endif %}">All Tracks</a>
+    {% for trk in tracks %}
+      <a href="/projects?track={{ trk.id }}" class="pill-btn {% if selected_track == trk.id %}active{% endif %}">
+        {{ trk.name }}
+      </a>
+    {% endfor %}
+  </div>
+
+  <input type="text" id="search-input" class="search-input" placeholder="Search project title or summary..." onkeyup="filterProjects()">
+</div>
+
+<!-- Project Cards Grid -->
+<div class="grid-3" id="projects-grid">
+  {% for p in projects %}
+    <div class="card project-card" data-title="{{ p.title }}" data-summary="{{ p.summary }}">
+      <div>
+        <div class="card-header">
+          <span class="badge badge-purple">{{ p.track_name or 'Track ' ~ p.track_id }}</span>
+          <span class="mono" style="color:var(--text-muted); font-size:0.75rem;">{{ p.id }}</span>
+        </div>
+        <h3 class="card-title">{{ p.title }}</h3>
+        <p class="card-desc">{{ p.summary or 'Full production submission with automated verification suite.' }}</p>
+      </div>
+
+      <div class="card-footer">
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          {% if p.repo_url %}
+            <a href="{{ p.repo_url }}" target="_blank" class="btn btn-outline" style="padding:0.25rem 0.6rem; font-size:0.75rem;">
+              Code Repo
+            </a>
+          {% endif %}
+          <button onclick="openProjectModal('{{ p.id }}')" class="btn btn-outline" style="padding:0.25rem 0.6rem; font-size:0.75rem;">
+            Details & Discussion
+          </button>
+        </div>
+
+        <button onclick="castVote('{{ p.id }}', this)" class="badge" style="cursor:pointer;" title="Community Vote">
+          <span class="dot"></span> Vote
+        </button>
+      </div>
+    </div>
+
+    <!-- Project Detail Modal -->
+    <div id="modal-{{ p.id }}" class="modal-backdrop">
+      <div class="modal-box">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem;">
+          <div>
+            <span class="badge badge-purple" style="margin-bottom:0.5rem;">{{ p.track_name or p.track_id }}</span>
+            <h2 class="serif-heading" style="font-size:1.75rem;">{{ p.title }}</h2>
+            <div class="mono" style="color:var(--text-muted); font-size:0.8rem; margin-top:0.25rem;">
+              Team: {{ p.team_name or p.team_id }} · Submitted: {{ p.submitted_at[:16].replace('T', ' ') }} UTC
+            </div>
+          </div>
+          <button onclick="closeProjectModal('{{ p.id }}')" class="btn btn-outline" style="padding:0.3rem 0.6rem; font-size:0.8rem;">✕</button>
+        </div>
+
+        <div style="margin-bottom:1.5rem;">
+          <h4 style="font-size:0.9rem; text-transform:uppercase; color:var(--text-muted); font-family:var(--font-mono); margin-bottom:0.5rem;">Summary</h4>
+          <p style="color:var(--text-secondary); font-size:0.95rem;">{{ p.description or p.summary }}</p>
+        </div>
+
+        <div style="margin-bottom:1.5rem; display:flex; gap:1rem;">
+          {% if p.repo_url %}
+            <a href="{{ p.repo_url }}" target="_blank" class="btn btn-primary" style="font-size:0.8rem;">
+              View Source Repository ↗
+            </a>
+          {% endif %}
+          {% if p.demo_url %}
+            <a href="{{ p.demo_url }}" target="_blank" class="btn btn-outline" style="font-size:0.8rem;">
+              Live Interactive Demo ↗
+            </a>
+          {% endif %}
+        </div>
+
+        <!-- Discussion Section -->
+        <div style="border-top:1px solid var(--border); padding-top:1.5rem;">
+          <h4 style="font-size:0.9rem; text-transform:uppercase; color:var(--text-muted); font-family:var(--font-mono); margin-bottom:1rem;">Peer Comments & Feedback</h4>
+          <div id="comments-list-{{ p.id }}" style="margin-bottom:1rem; display:flex; flex-direction:column; gap:0.75rem;">
+            <div class="card" style="padding:0.75rem 1rem; font-size:0.85rem; background:var(--bg-secondary);">
+              <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+                <span class="mono" style="color:var(--text-primary); font-weight:600;">Ada Okonkwo (Judge)</span>
+                <span style="color:var(--text-muted); font-size:0.75rem;">Fixture Record</span>
+              </div>
+              <p style="color:var(--text-secondary);">Solid structural separation and defensible error boundaries.</p>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:0.5rem;">
+            <input type="text" id="comment-input-{{ p.id }}" class="search-input" style="flex:1;" placeholder="Add feedback or technical inquiry...">
+            <button onclick="submitComment('{{ p.id }}')" class="btn btn-primary" style="font-size:0.8rem;">Post</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<script>
+async function submitComment(projectId) {
+  const input = document.getElementById(`comment-input-${projectId}`);
+  const text = input.value.trim();
+  if (!text) return;
+
+  try {
+    const res = await fetch(`/api/comments/${projectId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: text, author_name: 'Peer Reviewer' })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const list = document.getElementById(`comments-list-${projectId}`);
+      const newCard = document.createElement('div');
+      newCard.className = 'card';
+      newCard.style.cssText = 'padding:0.75rem 1rem; font-size:0.85rem; background:var(--bg-secondary);';
+      newCard.innerHTML = `
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+          <span class="mono" style="color:var(--text-primary); font-weight:600;">${data.author_name}</span>
+          <span style="color:var(--text-muted); font-size:0.75rem;">Just now</span>
+        </div>
+        <p style="color:var(--text-secondary);">${data.content}</p>
+      `;
+      list.appendChild(newCard);
+      input.value = '';
+    }
+  } catch (e) {
+    alert('Failed to post comment: ' + e);
+  }
+}
+</script>
+{% endblock %}

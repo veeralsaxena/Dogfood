@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Judge Scoring Console — Hackathon Raptors{% endblock %}
+
+{% block content %}
+<div class="hero" style="padding-top:2rem; padding-bottom:2rem;">
+  <div class="section-marker">
+    <span class="num">04</span>
+    <span class="sep"></span>
+    <span>JUDGE EVALUATION CONSOLE</span>
+  </div>
+  <h1 class="hero-title">
+    Weighted criteria <span class="serif-italic">evaluation</span>.
+  </h1>
+  <p class="hero-subtitle">
+    Evaluate assigned projects on a 1–5 scale. Role isolation is cryptographically guaranteed: your reviews remain strictly private until final publication.
+  </p>
+</div>
+
+<div style="max-width:900px; margin:0 auto;">
+  <div style="margin-bottom:2rem;">
+    <h3 class="serif-heading" style="font-size:1.4rem; margin-bottom:1rem;">Select Project for Scoring</h3>
+    <div style="display:flex; flex-direction:column; gap:1.25rem;">
+      {% for p in projects[:6] %}
+        <div class="card" style="padding:1.5rem;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
+            <div>
+              <span class="badge badge-purple" style="margin-bottom:0.35rem;">{{ p.track_id }}</span>
+              <h3 class="serif-heading" style="font-size:1.3rem;">{{ p.title }}</h3>
+              <p style="color:var(--text-secondary); font-size:0.85rem; margin-top:0.25rem;">{{ p.summary }}</p>
+            </div>
+            {% if p.repo_url %}
+              <a href="{{ p.repo_url }}" target="_blank" class="btn btn-outline" style="font-size:0.75rem;">
+                Repository ↗
+              </a>
+            {% endif %}
+          </div>
+
+          <!-- Scoring Form -->
+          <form onsubmit="handleScoreSubmit(event, '{{ p.id }}')" style="border-top:1px solid var(--border); padding-top:1.25rem;">
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:1rem; margin-bottom:1rem;">
+              <div>
+                <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
+                  FUNCTIONALITY (40%)
+                </label>
+                <select id="crit-func-{{ p.id }}" class="search-input" style="width:100%;">
+                  <option value="5">5 — Exceptional</option>
+                  <option value="4" selected>4 — Strong</option>
+                  <option value="3">3 — Adequate</option>
+                  <option value="2">2 — Incomplete</option>
+                  <option value="1">1 — Deficient</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
+                  CODE QUALITY (30%)
+                </label>
+                <select id="crit-qual-{{ p.id }}" class="search-input" style="width:100%;">
+                  <option value="5">5 — Production</option>
+                  <option value="4" selected>4 — Clean</option>
+                  <option value="3">3 — Readable</option>
+                  <option value="2">2 — Fragile</option>
+                  <option value="1">1 — Unmaintainable</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
+                  INNOVATION (20%)
+                </label>
+                <select id="crit-innov-{{ p.id }}" class="search-input" style="width:100%;">
+                  <option value="5">5 — Novel Paradigm</option>
+                  <option value="4">4 — Creative</option>
+                  <option value="3" selected>3 — Standard</option>
+                  <option value="2">2 — Derivative</option>
+                  <option value="1">1 — Trivial</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
+                  DESIGN / UX (10%)
+                </label>
+                <select id="crit-des-{{ p.id }}" class="search-input" style="width:100%;">
+                  <option value="5">5 — Refined</option>
+                  <option value="4" selected>4 — Intuitive</option>
+                  <option value="3">3 — Usable</option>
+                  <option value="2">2 — Rough</option>
+                  <option value="1">1 — Broken</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-bottom:1rem;">
+              <input type="text" id="comment-{{ p.id }}" class="search-input" style="width:100%;" placeholder="Confidential review feedback (visible only to organizers & author post-freeze)...">
+            </div>
+
+            <div style="display:flex; justify-content:flex-end;">
+              <button type="submit" class="btn btn-primary" id="btn-score-{{ p.id }}">
+                Save Evaluation Score
+              </button>
+            </div>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script>
+async function handleScoreSubmit(e, projectId) {
+  e.preventDefault();
+  const btn = document.getElementById(`btn-score-${projectId}`);
+  btn.innerHTML = 'Saving...';
+
+  const criteria = {
+    functionality: parseInt(document.getElementById(`crit-func-${projectId}`).value),
+    quality: parseInt(document.getElementById(`crit-qual-${projectId}`).value),
+    innovation: parseInt(document.getElementById(`crit-innov-${projectId}`).value),
+    design: parseInt(document.getElementById(`crit-des-${projectId}`).value)
+  };
+  const comment = document.getElementById(`comment-${projectId}`).value;
+
+  try {
+    const res = await fetch('/api/judge/scores', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token judgea0000000000000000000000000000000000'
+      },
+      body: JSON.stringify({
+        project_id: projectId,
+        criteria: criteria,
+        comment: comment
+      })
+    });
+
+    if (res.ok) {
+      btn.innerHTML = '✓ Evaluation Saved';
+      btn.classList.add('badge-emerald');
+    } else {
+      const err = await res.json();
+      alert('Error saving score: ' + (err.detail || 'Failed'));
+      btn.innerHTML = 'Save Evaluation Score';
+    }
+  } catch (err) {
+    alert('Request failed: ' + err);
+    btn.innerHTML = 'Save Evaluation Score';
+  }
+}
+</script>
+{% endblock %}
