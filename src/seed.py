@@ -11,18 +11,21 @@ def seed_database():
     conn = get_db()
     cursor = conn.cursor()
 
-    # Clear existing data
+    # Clear existing data in child-first order
     cursor.executescript("""
+    PRAGMA foreign_keys = OFF;
+    DELETE FROM pairwise_votes;
+    DELETE FROM ballots;
+    DELETE FROM comments;
     DELETE FROM scores;
     DELETE FROM projects;
     DELETE FROM teams;
     DELETE FROM users;
     DELETE FROM tracks;
     DELETE FROM events;
-    DELETE FROM pairwise_votes;
-    DELETE FROM ballots;
-    DELETE FROM comments;
     DELETE FROM audit_logs;
+    DELETE FROM published_results;
+    PRAGMA foreign_keys = ON;
     """)
 
     if not FIXTURES_PATH.exists():

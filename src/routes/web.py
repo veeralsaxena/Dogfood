@@ -46,14 +46,17 @@ def gallery_view(request: Request, track: str = Query(None), search: str = Query
     projects = [dict(r) for r in cursor.fetchall()]
     conn.close()
 
-    return templates.TemplateResponse("gallery.html", {
-        "request": request,
-        "active_page": "gallery",
-        "projects": projects,
-        "tracks": tracks,
-        "selected_track": track,
-        "search_query": search
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="gallery.html",
+        context={
+            "active_page": "gallery",
+            "projects": projects,
+            "tracks": tracks,
+            "selected_track": track,
+            "search_query": search
+        }
+    )
 
 @router.get("/war-room", response_class=HTMLResponse)
 def war_room_view(request: Request):
@@ -87,14 +90,17 @@ def war_room_view(request: Request):
         "total_scores": len(raw_scores)
     }
 
-    return templates.TemplateResponse("war_room.html", {
-        "request": request,
-        "active_page": "war_room",
-        "projects": projects,
-        "judges": judges,
-        "stats": stats,
-        "normalization": normalization
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="war_room.html",
+        context={
+            "active_page": "war_room",
+            "projects": projects,
+            "judges": judges,
+            "stats": stats,
+            "normalization": normalization
+        }
+    )
 
 @router.get("/arena", response_class=HTMLResponse)
 def arena_view(request: Request):
@@ -127,12 +133,15 @@ def arena_view(request: Request):
             "skill_score": score
         })
 
-    return templates.TemplateResponse("arena.html", {
-        "request": request,
-        "active_page": "arena",
-        "pair": pair,
-        "rankings": rankings
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="arena.html",
+        context={
+            "active_page": "arena",
+            "pair": pair,
+            "rankings": rankings
+        }
+    )
 
 @router.get("/judge", response_class=HTMLResponse)
 def judge_portal_view(request: Request):
@@ -142,11 +151,14 @@ def judge_portal_view(request: Request):
     projects = [dict(r) for r in cursor.fetchall()]
     conn.close()
 
-    return templates.TemplateResponse("judge_portal.html", {
-        "request": request,
-        "active_page": "judge",
-        "projects": projects
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="judge_portal.html",
+        context={
+            "active_page": "judge",
+            "projects": projects
+        }
+    )
 
 @router.get("/audit", response_class=HTMLResponse)
 def audit_view(request: Request):
@@ -156,8 +168,11 @@ def audit_view(request: Request):
         format=__import__('cryptography.hazmat.primitives.serialization', fromlist=['PublicFormat']).PublicFormat.Raw
     )
 
-    return templates.TemplateResponse("audit.html", {
-        "request": request,
-        "active_page": "audit",
-        "public_key": pub_bytes.hex()
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="audit.html",
+        context={
+            "active_page": "audit",
+            "public_key": pub_bytes.hex()
+        }
+    )
