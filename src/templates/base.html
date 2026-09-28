@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Hackathon Raptors — Dogfood Platform{% endblock %}</title>
+  <title>{% block title %}Veritas — Deterministic Competitive Evaluation Engine{% endblock %}</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <style>
-    /* Embedded system font stack fallbacks for 100% offline air-gapped readiness */
+    /* High-performance system font stack fallbacks */
     @font-face {
       font-family: 'Playfair Display';
       font-style: normal;
@@ -35,32 +35,59 @@
     </div>
   </div>
 
-  <!-- Raptors Navbar -->
+  <!-- Primary Navbar -->
   <nav class="navbar">
     <a href="/projects" class="brand-wrapper">
       <svg width="24" height="24" viewBox="0 0 34 38" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M17.048 37L1.21 27.57V10.8L16.83 1.06L32.88 10.43V27.2L17.28 36.93" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
         <path d="M17.48 20.42V27.61L25.2 23.05V15.78L17.48 20.42Z" fill="currentColor"/>
       </svg>
-      <span class="brand-title">RAPTORS <span class="serif-italic" style="text-transform:lowercase; font-size:1.1rem; color:var(--text-muted)">// dogfood</span></span>
+      <span class="brand-title">VERITAS <span class="serif-italic" style="text-transform:lowercase; font-size:1.05rem; color:var(--text-muted)">// evaluation engine</span></span>
     </a>
 
+    <!-- Dynamic Role-Based Navigation -->
     <ul class="nav-links">
-      <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
-      <li><a href="/submit" class="nav-link {% if active_page == 'submit' %}active{% endif %}">Submit</a></li>
-      <li><a href="/vote" class="nav-link {% if active_page == 'vote' %}active{% endif %}">Vote</a></li>
-      <li><a href="/war-room" class="nav-link {% if active_page == 'war_room' %}active{% endif %}">War Room</a></li>
-      <li><a href="/arena" class="nav-link {% if active_page == 'arena' %}active{% endif %}">Pairwise Arena</a></li>
-      <li><a href="/judge" class="nav-link {% if active_page == 'judge' %}active{% endif %}">Judge Portal</a></li>
-      <li><a href="/settings" class="nav-link {% if active_page == 'settings' %}active{% endif %}">Config</a></li>
-      <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Audit & Math</a></li>
-      <li><a href="/docs" target="_blank" class="nav-link">API Docs</a></li>
+      {% if not user or user.role == 'visitor' %}
+        <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
+        <li><a href="/vote" class="nav-link {% if active_page == 'vote' %}active{% endif %}">Community Ballot</a></li>
+        <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Audit & Verify</a></li>
+        <li><a href="/docs" target="_blank" class="nav-link">API Docs</a></li>
+      {% elif user.role == 'participant' %}
+        <li><a href="/participant/dashboard" class="nav-link {% if active_page == 'participant_dash' %}active{% endif %}">My Dashboard</a></li>
+        <li><a href="/submit" class="nav-link {% if active_page == 'submit' %}active{% endif %}">Submission</a></li>
+        <li><a href="/team/join/inv_tm_01" class="nav-link {% if active_page == 'team' %}active{% endif %}">Team Roster</a></li>
+        <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
+        <li><a href="/vote" class="nav-link {% if active_page == 'vote' %}active{% endif %}">Ballot</a></li>
+      {% elif user.role == 'judge' %}
+        <li><a href="/judge" class="nav-link {% if active_page == 'judge' %}active{% endif %}">Evaluation Queue</a></li>
+        <li><a href="/arena" class="nav-link {% if active_page == 'arena' %}active{% endif %}">Pairwise Arena</a></li>
+        <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
+        <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Audit & Math</a></li>
+      {% elif user.role in ('organizer', 'admin') %}
+        <li><a href="/war-room" class="nav-link {% if active_page == 'war_room' %}active{% endif %}">War Room</a></li>
+        <li><a href="/settings" class="nav-link {% if active_page == 'settings' %}active{% endif %}">Event Settings</a></li>
+        <li><a href="/arena" class="nav-link {% if active_page == 'arena' %}active{% endif %}">Pairwise Arena</a></li>
+        <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
+        <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Audit Logs</a></li>
+      {% endif %}
     </ul>
 
+    <!-- Right Controls: Profile / Login & Theme Toggle -->
     <div style="display:flex; align-items:center; gap:0.75rem;">
-      <a href="/api/export/results.csv" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.75rem;">
-        Export CSV
-      </a>
+      {% if user and user.role != 'visitor' %}
+        <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; font-family:var(--font-mono); color:var(--text-secondary); background:var(--bg-secondary); padding:0.35rem 0.75rem; border:1px solid var(--border); border-radius:4px;">
+          <span>{{ user.name }}</span>
+          <span class="badge badge-accent" style="font-size:0.65rem; padding:0.15rem 0.4rem;">{{ user.role }}</span>
+        </div>
+        <a href="/logout" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.75rem;">
+          Sign Out
+        </a>
+      {% else %}
+        <a href="/login" class="btn btn-primary" style="padding:0.4rem 0.9rem; font-size:0.78rem;">
+          Sign In
+        </a>
+      {% endif %}
+
       <button onclick="toggleTheme()" class="btn btn-outline" style="padding:0.4rem 0.6rem; font-size:0.75rem;" title="Toggle Theme">
         ◐
       </button>
@@ -74,9 +101,9 @@
 
   <!-- Footer -->
   <footer class="footer">
-    <div>HACKATHON RAPTORS — DOGFOOD PORTAL // OPERATED UNDER THE MIT LICENSE</div>
+    <div>VERITAS PLATFORM // ENTERPRISE COMPETITIVE EVALUATION & AUDIT SUITE</div>
     <div style="margin-top:0.35rem; color:var(--text-muted); font-size:0.75rem;">
-      AIR-GAPPED READY · VERIFIABLE MATH · ED25519 SIGNED AUDIT TRAIL
+      DETERMINISTIC EVALUATION · CRYPTOGRAPHIC AUDITABILITY · HIGH-AVAILABILITY RELATIONAL STORAGE
     </div>
   </footer>
 

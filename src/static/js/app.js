@@ -103,7 +103,15 @@ async function switchRole(role) {
       } else {
         localStorage.removeItem('auth_token');
       }
-      window.location.reload();
+      if (role === 'participant') {
+        window.location.href = '/participant/dashboard';
+      } else if (role.startsWith('judge')) {
+        window.location.href = '/judge';
+      } else if (role === 'organizer') {
+        window.location.href = '/war-room';
+      } else {
+        window.location.href = '/projects';
+      }
     }
   } catch (e) {
     console.error('Role switch failed', e);

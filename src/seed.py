@@ -72,13 +72,13 @@ def seed_database():
     # 4. Users / Judges / Organizers / Participants
     # Root Organizer
     cursor.execute(
-        "INSERT INTO users (id, name, email, role, token, tracks) VALUES (?, ?, ?, ?, ?, ?)",
-        ("org_root", "Event Organizer", "organizer@dogfood.local", "organizer", TEST_TOKENS["organizer"], "[]")
+        "INSERT INTO users (id, name, email, role, token, password, tracks) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        ("org_root", "Event Organizer", "organizer@dogfood.local", "organizer", TEST_TOKENS["organizer"], "password123", "[]")
     )
     # Default Participant
     cursor.execute(
-        "INSERT INTO users (id, name, email, role, token, tracks) VALUES (?, ?, ?, ?, ?, ?)",
-        ("prt_01", "Participant One", "participant@example.org", "participant", TEST_TOKENS["participant"], "[]")
+        "INSERT INTO users (id, name, email, role, token, password, tracks) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        ("prt_01", "Participant One", "participant@example.org", "participant", TEST_TOKENS["participant"], "password123", "[]")
     )
 
     # Fixture Judges
@@ -93,8 +93,8 @@ def seed_database():
             token = f"token_{j_id}_secret_key_2026"
 
         cursor.execute(
-            "INSERT INTO users (id, name, email, role, token, tracks) VALUES (?, ?, ?, ?, ?, ?)",
-            (j_id, jdg["name"], jdg["email"], "judge", token, json.dumps(jdg.get("tracks", [])))
+            "INSERT INTO users (id, name, email, role, token, password, tracks) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (j_id, jdg["name"], jdg["email"], "judge", token, "password123", json.dumps(jdg.get("tracks", [])))
         )
 
     # 5. Projects
@@ -157,6 +157,11 @@ def seed_database():
     print(f"  judge_a      Authorization: Token {TEST_TOKENS['judge_a']}")
     print(f"  judge_b      Authorization: Token {TEST_TOKENS['judge_b']}")
     print(f"  participant  Authorization: Token {TEST_TOKENS['participant']}")
+    print("\nweb login credentials (http://localhost:8080/login):")
+    print("  Organizer:    organizer@dogfood.local  /  password123")
+    print("  Judge Ada:    ada@example.org          /  password123")
+    print("  Judge Beta:   judge_b@example.org      /  password123")
+    print("  Participant:  participant@example.org  /  password123")
 
 if __name__ == "__main__":
     seed_database()

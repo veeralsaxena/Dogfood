@@ -43,6 +43,7 @@ def init_db():
         email TEXT UNIQUE NOT NULL,
         role TEXT NOT NULL, -- 'visitor', 'participant', 'judge', 'organizer', 'admin'
         token TEXT UNIQUE NOT NULL,
+        password TEXT DEFAULT 'password123',
         tracks TEXT -- JSON array of track ids
     );
 
@@ -114,6 +115,11 @@ def init_db():
     );
     """)
     conn.commit()
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN password TEXT DEFAULT 'password123'")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
     conn.close()
 
 def log_audit(action: str, actor: str, target: str = None, details: str = None):

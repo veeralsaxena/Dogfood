@@ -36,7 +36,7 @@ def test_svg_certificate_generation():
 def test_embed_gallery():
     resp = client.get("/embed/gallery")
     assert resp.status_code == 200
-    assert "HACKATHON RAPTORS" in resp.text
+    assert "VERITAS" in resp.text
     assert "Projects" in resp.text
 
 def test_bulk_import():

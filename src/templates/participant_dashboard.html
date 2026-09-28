@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Participant Hub — Veritas Platform{% endblock %}
+
+{% block content %}
+<!-- Participant Header -->
+<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 2.5rem; flex-wrap:wrap; gap:1rem;">
+  <div>
+    <div class="serif-italic" style="color:var(--text-muted); font-size:1.1rem; margin-bottom:0.25rem;">[ PARTICIPANT WORKSPACE ]</div>
+    <h1 style="font-size:2.5rem; margin-bottom:0.5rem; font-family:var(--font-serif);">Welcome, {{ user.name }}</h1>
+    <p style="color:var(--text-muted); font-size:0.95rem;">
+      Manage your project submission, team roster, and review criteria.
+    </p>
+  </div>
+
+  <div style="display:flex; gap:0.75rem; align-items:center;">
+    <a href="/submit" class="btn btn-primary" style="padding:0.6rem 1.25rem;">
+      Edit Submission →
+    </a>
+    <a href="/certificates/{{ project.id if project else 'prj_01' }}" target="_blank" class="btn btn-outline" style="padding:0.6rem 1.25rem;">
+      View Certificate ↗
+    </a>
+  </div>
+</div>
+
+<!-- Primary Status & Deadline Cards -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:1.25rem; margin-bottom:2.5rem;">
+  <!-- Submission Status -->
+  <div class="card" style="border-left: 3px solid var(--emerald);">
+    <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.4rem;">Submission State</div>
+    <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.5rem;">
+      <span class="status-indicator"></span>
+      <span style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:var(--emerald);">
+        {% if project and not project.is_draft %}SUBMITTED FOR EVALUATION{% else %}DRAFT IN PROGRESS{% endif %}
+      </span>
+    </div>
+    <div style="font-size:0.85rem; color:var(--text-secondary);">
+      Project ID: <strong style="font-family:var(--font-mono);">{{ project.id if project else 'prj_01' }}</strong> · Track: <strong>{{ track.name if track else 'Developer Tools' }}</strong>
+    </div>
+  </div>
+
+  <!-- Deadline Timer -->
+  <div class="card" style="border-left: 3px solid var(--accent);">
+    <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.4rem;">Evaluation Freeze</div>
+    <div id="participant-countdown" style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:var(--accent);">
+      COUNTDOWN SYNCHRONIZING...
+    </div>
+    <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:0.4rem;">
+      Submissions lock automatically at deadline
+    </div>
+  </div>
+
+  <!-- Team Allocation -->
+  <div class="card">
+    <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.4rem;">Team Capacity</div>
+    <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700;">
+      {{ team_members|length if team_members else 1 }} / 4 MEMBERS
+    </div>
+    <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:0.4rem;">
+      Team: <strong>{{ team.name if team else 'Nightshift' }}</strong>
+    </div>
+  </div>
+</div>
+
+<!-- Main Two-Column Layout -->
+<div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:2rem; align-items:start;">
+  <!-- Left Column: Project Overview & Completeness -->
+  <div>
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
+        <div>
+          <span class="badge badge-accent">{{ track.name if track else 'Developer Tools' }}</span>
+          <h2 style="font-size:1.75rem; font-family:var(--font-serif); margin-top:0.4rem;">
+            {{ project.title if project else 'Quiet Hours' }}
+          </h2>
+        </div>
+        <a href="/projects?search={{ project.title if project else 'Quiet Hours'|urlencode }}" class="btn btn-outline" style="font-size:0.8rem; padding:0.35rem 0.75rem;">
+          Public View ↗
+        </a>
+      </div>
+
+      <p style="color:var(--text-secondary); line-height:1.6; margin-bottom:1.25rem;">
+        {{ project.summary if project else 'Developer productivity suite for distraction-free deep work.' }}
+      </p>
+
+      <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:4px; padding:1rem; margin-bottom:1.25rem;">
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.4rem;">Connected Repository</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:0.85rem;">
+          <a href="{{ project.repo_url if project else 'https://github.com/example/repo' }}" target="_blank" style="color:var(--text-primary); text-decoration:none;">
+            {{ project.repo_url if project else 'https://github.com/example/repo' }} ↗
+          </a>
+          <span style="color:var(--emerald); font-size:0.75rem;">● VERIFIED</span>
+        </div>
+      </div>
+
+      <h3 style="font-size:1.1rem; margin-bottom:0.75rem;">Submission Readiness Checklist</h3>
+      <div style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.9rem;">
+        <div style="display:flex; align-items:center; gap:0.5rem; color:var(--emerald);">
+          ✓ Title and summary verified
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; color:var(--emerald);">
+          ✓ Git repository connected and accessible
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; color:var(--emerald);">
+          ✓ Evaluation track assigned
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; color:var(--emerald);">
+          ✓ Cryptographic certificate generated
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Team Roster & Invites -->
+  <div>
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h3 style="font-size:1.25rem; font-family:var(--font-serif); margin-bottom:1rem;">Team Collaboration</h3>
+      
+      <div style="margin-bottom:1.25rem;">
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.5rem;">Active Roster</div>
+        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+          {% for member in (team_members if team_members else ['participant@example.org', 'ada@example.org']) %}
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0.75rem; background:var(--bg-secondary); border:1px solid var(--border); border-radius:4px; font-size:0.85rem;">
+            <span>{{ member }}</span>
+            <span style="font-family:var(--font-mono); font-size:0.7rem; color:var(--text-muted);">ACTIVE</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border); padding-top:1rem;">
+        <label style="display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.4rem;">
+          Shareable Invite Code
+        </label>
+        <div style="display:flex; gap:0.5rem;">
+          <input type="text" readonly value="{{ team.invite_code if team else 'inv_tm_01' }}" id="invite-code-input" class="input" style="flex:1; font-family:var(--font-mono); font-size:0.85rem;" />
+          <button onclick="copyInviteCode()" class="btn btn-outline" style="font-size:0.8rem; padding:0.4rem 0.8rem;">
+            Copy
+          </button>
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem;">
+          Teammates can join via <a href="/team/join/{{ team.invite_code if team else 'inv_tm_01' }}" style="color:var(--text-muted); text-decoration:underline;">/team/join/{{ team.invite_code if team else 'inv_tm_01' }}</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Evaluation Criteria Breakdown -->
+    <div class="card">
+      <h3 style="font-size:1.15rem; font-family:var(--font-serif); margin-bottom:0.75rem;">Judging Weights</h3>
+      <div style="display:flex; flex-direction:column; gap:0.6rem; font-size:0.85rem;">
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--text-secondary);">Functionality</span>
+          <strong style="font-family:var(--font-mono);">40%</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--text-secondary);">Quality & Architecture</span>
+          <strong style="font-family:var(--font-mono);">30%</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--text-secondary);">Innovation</span>
+          <strong style="font-family:var(--font-mono);">20%</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--text-secondary);">Design & UX</span>
+          <strong style="font-family:var(--font-mono);">10%</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function copyInviteCode() {
+  const input = document.getElementById("invite-code-input");
+  input.select();
+  navigator.clipboard.writeText(input.value);
+  alert("Invite code copied to clipboard: " + input.value);
+}
+
+// Live Countdown Clock
+(function() {
+  const closeDate = new Date("{{ event.submissions_close if event else '2026-03-01T18:00:00Z' }}").getTime();
+  const el = document.getElementById("participant-countdown");
+
+  function update() {
+    const now = new Date().getTime();
+    const dist = closeDate - now;
+
+    if (dist <= 0) {
+      el.innerText = "LOCKED (DEADLINE CLOSED)";
+      el.style.color = "var(--text-muted)";
+      return;
+    }
+
+    const hours = Math.floor(dist / (1000 * 60 * 60));
+    const mins = Math.floor((dist % (1000 * 60 * 60)) / (1000 * 60));
+    const secs = Math.floor((dist % (1000 * 60)) / 1000);
+    el.innerText = `${String(hours).padStart(2, '0')}H ${String(mins).padStart(2, '0')}M ${String(secs).padStart(2, '0')}S`;
+  }
+
+  update();
+  setInterval(update, 1000);
+})();
+</script>
+{% endblock %}

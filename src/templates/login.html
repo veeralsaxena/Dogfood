@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — Veritas Platform{% endblock %}
+
+{% block content %}
+<div style="max-width: 520px; margin: 3rem auto;">
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <div class="serif-italic" style="color:var(--text-muted); font-size:1.1rem; margin-bottom:0.25rem;">[ ACCESS PORTAL ]</div>
+    <h1 style="font-size:2.4rem; margin-bottom:0.5rem; font-family:var(--font-serif);">Sign in to Veritas</h1>
+    <p style="color:var(--text-muted); font-size:0.9rem;">
+      Enter your credentials or choose a pre-configured role profile below.
+    </p>
+  </div>
+
+  <div class="card" style="padding: 2.25rem; border: 1px solid var(--border-light);">
+    <form id="login-form" onsubmit="handleFormLogin(event)">
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem; color:var(--text-secondary);">
+          Email Address
+        </label>
+        <input type="email" id="email-input" required class="input" style="width:100%;" placeholder="name@example.org" />
+      </div>
+
+      <div style="margin-bottom: 1.75rem;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
+          <label style="font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-secondary);">
+            Password
+          </label>
+          <span style="font-size:0.75rem; color:var(--text-muted);">Default: password123</span>
+        </div>
+        <input type="password" id="password-input" required class="input" style="width:100%;" value="password123" />
+      </div>
+
+      <button type="submit" id="login-btn" class="btn btn-primary" style="width:100%; padding:0.75rem; font-size:0.95rem; justify-content:center;">
+        Sign In to Workspace
+      </button>
+
+      <div id="login-error" style="display:none; margin-top:1rem; padding:0.75rem; background:rgba(239, 68, 68, 0.15); border:1px solid #ef4444; border-radius:4px; color:#fca5a5; font-size:0.85rem;"></div>
+    </form>
+
+    <div style="position:relative; margin: 2rem 0; text-align:center;">
+      <hr style="border:none; border-top:1px solid var(--border);" />
+      <span style="position:absolute; top:-0.65rem; left:50%; transform:translateX(-50%); background:var(--bg-surface); padding:0 0.75rem; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">
+        Or Quick Select Profile
+      </span>
+    </div>
+
+    <!-- Quick Sign-in Profile Cards -->
+    <div style="display:flex; flex-direction:column; gap:0.6rem;">
+      <div onclick="quickLogin('participant@example.org', 'password123')" class="card" style="padding:0.75rem 1rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); border-color:var(--border);" onmouseover="this.style.borderColor='var(--text-primary)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div>
+          <div style="font-weight:600; font-size:0.9rem;">Participant Profile</div>
+          <div style="font-size:0.75rem; color:var(--text-muted);">participant@example.org · Team Nightshift</div>
+        </div>
+        <span class="badge badge-accent">Participant →</span>
+      </div>
+
+      <div onclick="quickLogin('ada@example.org', 'password123')" class="card" style="padding:0.75rem 1rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); border-color:var(--border);" onmouseover="this.style.borderColor='var(--text-primary)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div>
+          <div style="font-weight:600; font-size:0.9rem;">Judge Ada Okonkwo</div>
+          <div style="font-size:0.75rem; color:var(--text-muted);">ada@example.org · Track: Developer Tools</div>
+        </div>
+        <span class="badge badge-purple">Judge →</span>
+      </div>
+
+      <div onclick="quickLogin('judge_b@example.org', 'password123')" class="card" style="padding:0.75rem 1rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); border-color:var(--border);" onmouseover="this.style.borderColor='var(--text-primary)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div>
+          <div style="font-weight:600; font-size:0.9rem;">Judge Beta</div>
+          <div style="font-size:0.75rem; color:var(--text-muted);">judge_b@example.org · Track: Infrastructure</div>
+        </div>
+        <span class="badge badge-purple">Judge →</span>
+      </div>
+
+      <div onclick="quickLogin('organizer@dogfood.local', 'password123')" class="card" style="padding:0.75rem 1rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); border-color:var(--border);" onmouseover="this.style.borderColor='var(--text-primary)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div>
+          <div style="font-weight:600; font-size:0.9rem;">Operations Lead</div>
+          <div style="font-size:0.75rem; color:var(--text-muted);">organizer@dogfood.local · Command Center</div>
+        </div>
+        <span class="badge badge-emerald">Organizer →</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function performLogin(email, password) {
+  const errDiv = document.getElementById("login-error");
+  const btn = document.getElementById("login-btn");
+  errDiv.style.display = "none";
+  btn.disabled = true;
+  btn.innerText = "Authenticating...";
+
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, password: password })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      if (data.token) {
+        localStorage.setItem("auth_token", "Token " + data.token);
+      }
+      window.location.href = data.redirect_url || "/projects";
+    } else {
+      errDiv.innerText = data.detail || "Invalid email or password.";
+      errDiv.style.display = "block";
+      btn.disabled = false;
+      btn.innerText = "Sign In to Workspace";
+    }
+  } catch (e) {
+    errDiv.innerText = "Connection error: " + e.message;
+    errDiv.style.display = "block";
+    btn.disabled = false;
+    btn.innerText = "Sign In to Workspace";
+  }
+}
+
+function handleFormLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById("email-input").value;
+  const password = document.getElementById("password-input").value;
+  performLogin(email, password);
+}
+
+function quickLogin(email, password) {
+  document.getElementById("email-input").value = email;
+  document.getElementById("password-input").value = password;
+  performLogin(email, password);
+}
+</script>
+{% endblock %}
