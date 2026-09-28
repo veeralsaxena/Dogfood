@@ -1,9 +1,9 @@
 import json
 import urllib.request
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from src.database import get_db, log_audit
 
-def dispatch_webhook(event_type: str, payload: Dict[str, Any]):
+def dispatch_webhook(event_type: str, payload: Dict[str, Any], endpoint_url: Optional[str] = None) -> bool:
     """
     Dispatches outbound webhook payloads asynchronously or logs them
     for Discord/Slack integrations.

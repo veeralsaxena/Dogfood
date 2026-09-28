@@ -87,3 +87,45 @@ function filterProjects() {
     }
   });
 }
+
+// Executive Role Switcher
+async function switchRole(role) {
+  try {
+    const res = await fetch('/api/auth/switch-role', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: role })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.token) {
+        localStorage.setItem('auth_token', 'Token ' + data.token);
+      } else {
+        localStorage.removeItem('auth_token');
+      }
+      window.location.reload();
+    }
+  } catch (e) {
+    console.error('Role switch failed', e);
+  }
+}
+
+// Initialize active role on load
+(async function initActiveRole() {
+  try {
+    const res = await fetch('/api/auth/me');
+    if (res.ok) {
+      const me = await res.json();
+      const badge = document.getElementById('current-role-badge');
+      if (badge) {
+        badge.innerText = me.authenticated ? `${me.name} (${me.role})` : 'Public Visitor';
+      }
+      const activeRole = me.authenticated ? (me.id === 'jdg_01' ? 'judge_a' : (me.id === 'jdg_02' ? 'judge_b' : me.role)) : 'visitor';
+      document.querySelectorAll('.persona-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById(`pbtn-${activeRole}`);
+      if (activeBtn) activeBtn.classList.add('active');
+    }
+  } catch (e) {
+    console.error('Failed to fetch active role', e);
+  }
+})();

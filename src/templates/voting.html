@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Community Ballot & People's Choice — Hackathon Raptors{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2.5rem;">
+  <div class="serif-italic" style="color:var(--text-muted); font-size:1.1rem; margin-bottom:0.25rem;">[ 06 ] | COMMUNITY BALLOT</div>
+  <h1 style="font-size:2.5rem; margin-bottom:0.75rem;">Public Voting & Anti-Sybil Choice</h1>
+  <p style="color:var(--text-muted); max-width:850px; line-height:1.6;">
+    Cast your ballot for the People's Choice award. In accordance with Tier 3 rules, all project cards are ordered using the <strong>Fisher-Yates randomized permutation</strong> on every pageload to counteract primacy and recency position bias. Live vote totals remain strictly sealed until the conclusion of the voting window.
+  </p>
+</div>
+
+<!-- Voting Status Dashboard -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1.25rem; margin-bottom:2.5rem;">
+  <div class="card" style="border-left: 3px solid var(--accent);">
+    <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">Voting Status</div>
+    <div style="display:flex; align-items:center; gap:0.5rem;">
+      <span class="status-indicator"></span>
+      <span style="font-family:var(--font-mono); font-size:1.1rem; font-weight:600;">ACTIVE · SEALED RESULTS</span>
+    </div>
+    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem;">Results hidden until voting close</div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">Anti-Sybil Defense</div>
+    <div style="font-family:var(--font-mono); font-size:1.1rem; font-weight:600; color:var(--emerald);">TOKEN + IP RATE LIMIT</div>
+    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem;">Duplicate ballots strictly refused</div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">Total Eligible Projects</div>
+    <div style="font-family:var(--font-mono); font-size:1.1rem; font-weight:600;">{{ projects|length }} HACKS ON BALLOT</div>
+    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem;">Fisher-Yates randomized presentation</div>
+  </div>
+</div>
+
+<!-- Community Ballot Grid -->
+<div style="margin-bottom: 1.5rem; display:flex; justify-content:space-between; align-items:center;">
+  <h2 style="font-size:1.5rem;">Randomized Ballot Candidates</h2>
+  <button onclick="location.reload()" class="btn btn-outline" style="font-size:0.8rem; padding:0.4rem 0.8rem;">
+    ↻ Re-Shuffle Order
+  </button>
+</div>
+
+<div class="project-grid">
+  {% for p in projects %}
+  <div class="card" id="card-{{ p.id }}" style="display:flex; flex-direction:column; justify-content:space-between;">
+    <div>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
+        <span class="badge badge-accent">{{ p.track_id or 'General' }}</span>
+        <span style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted);">#{{ p.id }}</span>
+      </div>
+
+      <h3 style="font-size:1.35rem; margin-bottom:0.4rem; font-family:var(--font-serif);">
+        {{ p.title }}
+      </h3>
+      
+      <p style="color:var(--text-muted); font-size:0.9rem; line-height:1.5; margin-bottom:1.25rem;">
+        {{ p.summary }}
+      </p>
+    </div>
+
+    <div>
+      <div style="border-top:1px solid var(--border); padding-top:1rem; margin-top:0.5rem; display:flex; justify-content:space-between; align-items:center;">
+        {% if p.repo_url %}
+        <a href="{{ p.repo_url }}" target="_blank" class="btn btn-outline" style="font-size:0.75rem; padding:0.35rem 0.7rem;">
+          Repo ↗
+        </a>
+        {% else %}
+        <span></span>
+        {% endif %}
+
+        <button onclick="castCommunityVote('{{ p.id }}', this)" class="btn btn-primary" style="font-size:0.8rem; padding:0.45rem 1rem;">
+          Vote For Project
+        </button>
+      </div>
+
+      <!-- Quick Discussion Preview -->
+      <div style="margin-top:0.75rem; font-size:0.75rem; color:var(--text-muted);">
+        <a href="/projects?search={{ p.title|urlencode }}" style="color:var(--text-muted); text-decoration:underline;">
+          View full submission details & feedback →
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+async function castCommunityVote(projectId, btn) {
+  btn.disabled = true;
+  btn.innerText = "Voting...";
+
+  try {
+    const res = await fetch("/api/vote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project_id: projectId })
+    });
+
+    if (res.ok) {
+      btn.innerText = "✓ Voted Successfully";
+      btn.className = "btn";
+      btn.style.backgroundColor = "var(--emerald)";
+      btn.style.color = "#000";
+    } else {
+      const data = await res.json();
+      btn.disabled = false;
+      btn.innerText = "Vote For Project";
+      alert(data.detail || "Unable to cast vote.");
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerText = "Vote For Project";
+    alert("Connection error: " + err.message);
+  }
+}
+</script>
+{% endblock %}

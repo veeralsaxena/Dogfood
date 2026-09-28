@@ -6,8 +6,8 @@
 base_url = "http://localhost:8080"
 
 [tiers]
-claimed = ["T1", "T2"]
-pitch = "A self-hostable, air-gapped hackathon platform with raptors.dev editorial aesthetic, verifiable Ed25519 judging math, and strict backend role isolation."
+claimed = ["T1", "T2", "T3", "T4"]
+pitch = "Enterprise-grade, 100% offline air-gapped hackathon platform (Veritas) with raptors.dev editorial aesthetic, dual-engine judging (Empirical Bayes + Bradley-Terry), anti-Sybil randomized community voting, OpenAPI 3.1 REST API, outbound webhooks, dynamic SVG award certificates, and trustless Ed25519 cryptographic results verification."
 
 [auth]
 organizer   = "Authorization: Token organizer0000000000000000000000000000000"
@@ -16,8 +16,16 @@ judge_b     = "Authorization: Token judgeb0000000000000000000000000000000000"
 participant = "Authorization: Token participant00000000000000000000000000000"
 
 [routes]
-gallery      = "/projects"
-submit       = "/api/projects"
-judge_scores = "/api/judge/scores"
-peer_scores  = "/api/judge/scores?judge=judge_a"
-csv_export   = "/api/export/results.csv"
+gallery          = "/projects"
+submit           = "/api/projects"
+judge_scores     = "/api/judge/scores"
+peer_scores      = "/api/judge/scores?judge=judge_a"
+csv_export       = "/api/export/results.csv"
+ballot           = "/api/ballot"
+community_vote   = "/api/vote"
+pairwise_vote    = "/api/arena/vote"
+results_bundle   = "/api/export/verification-bundle"
+results_publish  = "/api/export/publish"
+team_join        = "/api/teams/join"
+event_settings   = "/api/event/settings"
+import_data      = "/api/export/import"

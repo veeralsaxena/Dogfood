@@ -16,6 +16,25 @@
   </style>
 </head>
 <body>
+  <!-- Executive Role Switcher Bar -->
+  <div class="persona-bar">
+    <div class="persona-bar-content">
+      <div class="persona-label">
+        <span class="pulse-dot"></span>
+        <span style="font-family:var(--font-mono); font-size:0.72rem; letter-spacing:0.05em; text-transform:uppercase;">
+          Active Persona: <strong id="current-role-badge">Public Visitor</strong>
+        </span>
+      </div>
+      <div class="persona-buttons">
+        <button onclick="switchRole('visitor')" class="persona-btn active" id="pbtn-visitor">Visitor</button>
+        <button onclick="switchRole('participant')" class="persona-btn" id="pbtn-participant">Participant</button>
+        <button onclick="switchRole('judge_a')" class="persona-btn" id="pbtn-judge_a">Judge A (Ada)</button>
+        <button onclick="switchRole('judge_b')" class="persona-btn" id="pbtn-judge_b">Judge B (Beta)</button>
+        <button onclick="switchRole('organizer')" class="persona-btn" id="pbtn-organizer">Organizer (Ops)</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Raptors Navbar -->
   <nav class="navbar">
     <a href="/projects" class="brand-wrapper">
@@ -29,6 +48,7 @@
     <ul class="nav-links">
       <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
       <li><a href="/submit" class="nav-link {% if active_page == 'submit' %}active{% endif %}">Submit</a></li>
+      <li><a href="/vote" class="nav-link {% if active_page == 'vote' %}active{% endif %}">Vote</a></li>
       <li><a href="/war-room" class="nav-link {% if active_page == 'war_room' %}active{% endif %}">War Room</a></li>
       <li><a href="/arena" class="nav-link {% if active_page == 'arena' %}active{% endif %}">Pairwise Arena</a></li>
       <li><a href="/judge" class="nav-link {% if active_page == 'judge' %}active{% endif %}">Judge Portal</a></li>

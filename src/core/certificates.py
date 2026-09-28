@@ -55,7 +55,7 @@ def generate_svg_certificate(project_id: str, title: str, team_name: str, rank: 
   <g transform="translate(500, 550)">
     <circle r="40" fill="none" stroke="url(#gold-grad)" stroke-width="2" />
     <circle r="36" fill="none" stroke="#27272a" stroke-width="1" stroke-dasharray="3,3" />
-    <text y="5" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="bold" fill="#f59e0b" text-anchor="middle">VERIFIED</text>
+    <text y="5" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="bold" fill="#f59e0b" text-anchor="middle">ED25519 VERIFIED</text>
   </g>
 
   <!-- Signatures -->

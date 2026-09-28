@@ -1,10 +1,11 @@
 import json
 import random
-from fastapi import APIRouter, Request, Query
+from fastapi import APIRouter, Request, Query, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from src.database import get_db
-from src.config import BASE_DIR
+from src.config import BASE_DIR, TEST_TOKENS
+from src.core.auth import get_current_user
 from src.core.normalization import run_normalization
 from src.core.pairwise import solve_bradley_terry
 from src.core.crypto import get_or_create_keys
@@ -286,3 +287,56 @@ def embed_gallery_view(request: Request):
         name="embed_gallery.html",
         context={"projects": projects}
     )
+
+@router.get("/vote", response_class=HTMLResponse)
+def community_voting_view(request: Request):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, title, summary, track_id, repo_url FROM projects WHERE is_draft = 0")
+    projects = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    # Tier 3 requirement: Fisher-Yates shuffle to counteract primacy/positional bias
+    random.shuffle(projects)
+
+    user = get_current_user(request)
+    return templates.TemplateResponse(
+        request=request,
+        name="voting.html",
+        context={
+            "active_page": "vote",
+            "projects": projects,
+            "user": user
+        }
+    )
+
+@router.get("/api/auth/me")
+def auth_me(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return {"authenticated": False, "role": "visitor", "name": "Anonymous Visitor"}
+    return {
+        "authenticated": True,
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "tracks": user.tracks
+    }
+
+@router.post("/api/auth/switch-role")
+def auth_switch_role(payload: dict, response: Response):
+    role = payload.get("role", "visitor")
+    token_map = {
+        "organizer": TEST_TOKENS["organizer"],
+        "judge_a": TEST_TOKENS["judge_a"],
+        "judge_b": TEST_TOKENS["judge_b"],
+        "participant": TEST_TOKENS["participant"],
+    }
+    if role in token_map:
+        tok = token_map[role]
+        response.set_cookie(key="session", value=tok, path="/", httponly=False)
+        return {"status": "success", "role": role, "token": tok}
+    else:
+        response.delete_cookie(key="session", path="/")
+        return {"status": "success", "role": "visitor", "token": None}
