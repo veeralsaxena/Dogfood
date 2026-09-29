@@ -264,23 +264,17 @@ async function handleCreateCompetition(e) {
     const data = await res.json();
     if (res.ok && data.status === 'success') {
       msg.style.display = 'block';
-      msg.style.background = 'rgba(16, 185, 129, 0.15)';
-      msg.style.border = '1px solid #10b981';
-      msg.style.color = '#6ee7b7';
+      msg.className = 'alert alert-success';
       msg.innerHTML = `✓ ${data.message} Join Code: <strong>${data.join_code}</strong>`;
       setTimeout(() => window.location.reload(), 1500);
     } else {
       msg.style.display = 'block';
-      msg.style.background = 'rgba(239, 68, 68, 0.15)';
-      msg.style.border = '1px solid #ef4444';
-      msg.style.color = '#fca5a5';
+      msg.className = 'alert alert-error';
       msg.innerText = data.detail || 'Failed to create competition.';
     }
   } catch (err) {
     msg.style.display = 'block';
-    msg.style.background = 'rgba(239, 68, 68, 0.15)';
-    msg.style.border = '1px solid #ef4444';
-    msg.style.color = '#fca5a5';
+    msg.className = 'alert alert-error';
     msg.innerText = 'Network error: ' + err.message;
   } finally {
     btn.disabled = false;

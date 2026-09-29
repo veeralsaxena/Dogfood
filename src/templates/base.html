@@ -23,29 +23,14 @@
       font-family: var(--font-mono);
       cursor: pointer;
     }
-    {% if active_event and active_event.brand %}
+    {% if active_event and active_event.brand and active_event.brand.accent_color and active_event.brand.accent_color not in ('#ffffff', '#fafafa') %}
     :root {
-      {% if active_event.brand.accent_color %}
       --accent: {{ active_event.brand.accent_color }};
-      --accent-soft: {{ active_event.brand.accent_color }}26;
+      --accent-soft: {{ active_event.brand.accent_color }}22;
       --brand-accent: {{ active_event.brand.accent_color }};
-      {% endif %}
       {% if active_event.brand.accent_hover %}
       --accent-hover: {{ active_event.brand.accent_hover }};
       {% endif %}
-    }
-    .badge-accent {
-      background: {{ active_event.brand.accent_color }}26 !important;
-      color: {{ active_event.brand.accent_color }} !important;
-      border-color: {{ active_event.brand.accent_color }}55 !important;
-    }
-    .btn-accent {
-      background: {{ active_event.brand.accent_color }} !important;
-      border-color: {{ active_event.brand.accent_color }} !important;
-      color: #ffffff !important;
-    }
-    .btn-accent:hover {
-      background: {{ active_event.brand.accent_hover or active_event.brand.accent_color }} !important;
     }
     .brand-accent-text {
       color: {{ active_event.brand.accent_color }} !important;
@@ -80,8 +65,8 @@
         </svg>
         {% else %}
         <svg width="22" height="22" viewBox="0 0 34 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M17.048 37L1.21 27.57V10.8L16.83 1.06L32.88 10.43V27.2L17.28 36.93" stroke="{{ active_event.brand.accent_color if active_event and active_event.brand and active_event.brand.accent_color else 'currentColor' }}" stroke-width="2" stroke-linecap="round"/>
-          <path d="M17.48 20.42V27.61L25.2 23.05V15.78L17.48 20.42Z" fill="{{ active_event.brand.accent_color if active_event and active_event.brand and active_event.brand.accent_color else 'currentColor' }}"/>
+          <path d="M17.048 37L1.21 27.57V10.8L16.83 1.06L32.88 10.43V27.2L17.28 36.93" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M17.48 20.42V27.61L25.2 23.05V15.78L17.48 20.42Z" fill="currentColor"/>
         </svg>
         {% endif %}
         <span class="brand-title" style="font-weight:700; letter-spacing:0.05em; font-size:1.05rem;">
@@ -95,8 +80,9 @@
       <!-- Active Competition Selector -->
       {% if active_event %}
       <a href="/competitions" style="text-decoration:none;">
-        <span class="badge badge-accent" style="font-size:0.7rem; padding:0.2rem 0.6rem; cursor:pointer;" title="Click to view all competitions or switch">
-          ● {{ active_event.name }}
+        <span class="badge" style="font-size:0.75rem; padding:0.25rem 0.65rem; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-secondary); cursor:pointer; display:inline-flex; align-items:center; gap:0.45rem;" title="Click to view all competitions or switch">
+          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--emerald);"></span>
+          <span>{{ active_event.name }}</span>
         </span>
       </a>
       {% endif %}
@@ -191,7 +177,7 @@
           Join Competition →
         </button>
       </form>
-      <div id="modal-join-error" style="display:none; margin-top:1rem; padding:0.6rem; background:rgba(239, 68, 68, 0.15); border:1px solid #ef4444; border-radius:4px; color:#fca5a5; font-size:0.8rem;"></div>
+      <div id="modal-join-error" class="alert alert-error" style="display:none; margin-top:1rem;"></div>
     </div>
   </div>
 

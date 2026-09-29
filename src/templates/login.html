@@ -13,8 +13,8 @@
   </div>
 
   {% if join_code %}
-  <div style="background:rgba(59, 130, 246, 0.15); border:1px solid #3b82f6; border-radius:4px; padding:0.75rem 1rem; margin-bottom:1.5rem; text-align:center; font-size:0.85rem; color:#93c5fd;">
-    <strong>Competition Invitation:</strong> You are joining with code <code style="color:#fff; font-family:var(--font-mono); font-weight:700;">{{ join_code }}</code>. Sign in or <a href="/signup?join_code={{ join_code }}" style="color:#fff; text-decoration:underline; font-weight:600;">register a new account</a>.
+  <div class="alert alert-info" style="margin-bottom:1.5rem; text-align:center;">
+    <strong>Competition Invitation:</strong> You are joining with code <code style="font-family:var(--font-mono); font-weight:700;">{{ join_code }}</code>. Sign in or <a href="/signup?join_code={{ join_code }}" style="color:inherit; text-decoration:underline; font-weight:600;">register a new account</a>.
   </div>
   {% endif %}
 
@@ -41,8 +41,8 @@
         Sign In to Workspace
       </button>
 
-      <div id="login-error" style="display:none; margin-top:1rem; padding:0.75rem; background:rgba(239, 68, 68, 0.15); border:1px solid #ef4444; border-radius:4px; color:#fca5a5; font-size:0.85rem;"></div>
-      <div id="login-info" style="display:none; margin-top:1rem; padding:0.75rem; background:rgba(59, 130, 246, 0.15); border:1px solid #3b82f6; border-radius:4px; color:#93c5fd; font-size:0.85rem;"></div>
+      <div id="login-error" class="alert alert-error" style="display:none; margin-top:1rem;"></div>
+      <div id="login-info" class="alert alert-info" style="display:none; margin-top:1rem;"></div>
     </form>
 
     <div style="margin-top: 1.5rem; text-align: center; font-size:0.85rem;">

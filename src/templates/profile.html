@@ -95,9 +95,7 @@ async function handleChangePassword(e) {
 
   if (newPw !== confirmPw) {
     statusDiv.innerText = "New passwords do not match.";
-    statusDiv.style.background = "rgba(239, 68, 68, 0.15)";
-    statusDiv.style.border = "1px solid #ef4444";
-    statusDiv.style.color = "#fca5a5";
+    statusDiv.className = "alert alert-error";
     statusDiv.style.display = "block";
     return;
   }
@@ -121,23 +119,17 @@ async function handleChangePassword(e) {
     const data = await res.json();
     if (res.ok && data.status === "success") {
       statusDiv.innerText = "✓ Password updated successfully.";
-      statusDiv.style.background = "rgba(16, 185, 129, 0.15)";
-      statusDiv.style.border = "1px solid #10b981";
-      statusDiv.style.color = "#6ee7b7";
+      statusDiv.className = "alert alert-success";
       statusDiv.style.display = "block";
       document.getElementById("password-form").reset();
     } else {
       statusDiv.innerText = data.detail || "Failed to update password.";
-      statusDiv.style.background = "rgba(239, 68, 68, 0.15)";
-      statusDiv.style.border = "1px solid #ef4444";
-      statusDiv.style.color = "#fca5a5";
+      statusDiv.className = "alert alert-error";
       statusDiv.style.display = "block";
     }
   } catch (err) {
     statusDiv.innerText = "Network error: " + err.message;
-    statusDiv.style.background = "rgba(239, 68, 68, 0.15)";
-    statusDiv.style.border = "1px solid #ef4444";
-    statusDiv.style.color = "#fca5a5";
+    statusDiv.className = "alert alert-error";
     statusDiv.style.display = "block";
   } finally {
     btn.disabled = false;

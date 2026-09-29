@@ -38,12 +38,18 @@ async function castVote(projectId, btnElement) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ project_id: projectId })
     });
-    if (res.ok) {
+    if (res.status === 401) {
+      alert("Sign-in required: Please sign in or register to cast your verified community vote.");
+      window.location.href = "/login?next=/vote";
+      return;
+    }
+    const data = await res.json();
+    if (res.ok && data.status === 'success') {
       btnElement.innerHTML = '✓ Voted';
       btnElement.classList.add('badge-emerald');
+      alert(data.message);
     } else {
-      const err = await res.json();
-      alert(err.detail || 'Could not record vote');
+      alert(data.detail || data.message || 'Could not record vote');
     }
   } catch (e) {
     alert('Voting failed: ' + e);

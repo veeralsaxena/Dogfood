@@ -18,9 +18,22 @@ def test_t3_randomized_ballot():
     assert "title" in b1[0]
 
 def test_t3_community_voting_flow():
-    """T3: Verifies casting community votes and anti-abuse protection."""
-    res = client.post("/api/vote", json={"project_id": "prj_01"})
-    assert res.status_code in (200, 400) # 200 on first, 400 on duplicate
+    """T3: Verifies casting community votes, auth requirement, and single-ballot transfer."""
+    # 1. Unauthenticated vote attempt MUST fail with 401
+    unauth_res = client.post("/api/vote", json={"project_id": "prj_01"})
+    assert unauth_res.status_code == 401
+
+    # 2. Authenticated vote with valid user token succeeds
+    headers = {"Authorization": f"Bearer {TEST_TOKENS['participant']}"}
+    res = client.post("/api/vote", json={"project_id": "prj_01"}, headers=headers)
+    assert res.status_code == 200
+    assert res.json()["status"] == "success"
+
+    # 3. Voting for another project transfers the single ballot
+    res_transfer = client.post("/api/vote", json={"project_id": "prj_02"}, headers=headers)
+    assert res_transfer.status_code == 200
+    assert res_transfer.json()["status"] == "success"
+    assert res_transfer.json()["project_id"] == "prj_02"
 
 def test_t3_project_comments():
     """T3: Verifies public discussions and comments."""

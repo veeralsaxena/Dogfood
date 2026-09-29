@@ -55,9 +55,9 @@ def get_active_event_context(request: Request, event_id_or_slug: str = None):
                 "brand_name": "VERITAS",
                 "org_name": d.get("name", "Veritas"),
                 "tagline": "evaluation platform",
-                "accent_color": "#f59e0b",
-                "accent_hover": "#d97706",
-                "theme_preset": "amber",
+                "accent_color": "#10b981",
+                "accent_hover": "#059669",
+                "theme_preset": "emerald",
                 "crest_icon": "veritas",
                 "hero_title": "Software built for rigorous evaluation."
             }
@@ -593,7 +593,7 @@ def certificate_view(project_id: str):
 
     org_name = brand.get("org_name") or row["event_name"] or "HACKATHON RAPTORS"
     sub_org = brand.get("sub_org") or f"{brand.get('brand_name', 'VERITAS')} OFFICIAL COMPETITION"
-    accent = brand.get("accent_color") or "#f59e0b"
+    accent = brand.get("accent_color") or "#10b981"
 
     svg_content = generate_svg_certificate(
         project_id=row["id"],
@@ -636,6 +636,16 @@ def community_voting_view(request: Request, event: str = Query(None)):
 
     random.shuffle(projects)
     user = get_current_user(request)
+    user_voted_project_id = None
+    if user:
+        event_id = active_event["id"] if active_event else "evt_01"
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT project_id FROM ballots WHERE event_id = ? AND voter_token = ?", (event_id, user.id))
+        ballot_row = cursor.fetchone()
+        conn.close()
+        if ballot_row:
+            user_voted_project_id = ballot_row["project_id"]
 
     return templates.TemplateResponse(
         request=request,
@@ -644,7 +654,8 @@ def community_voting_view(request: Request, event: str = Query(None)):
             "active_page": "vote",
             "projects": projects,
             "user": user,
-            "active_event": active_event
+            "active_event": active_event,
+            "user_voted_project_id": user_voted_project_id
         }
     )
 

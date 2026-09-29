@@ -24,9 +24,15 @@ def get_randomized_ballot():
 
 @router.post("/vote")
 def cast_community_vote(vote: CommunityVoteCreate, request: Request):
-    client_ip = request.client.host if request.client else "127.0.0.1"
     user = get_current_user(request)
-    voter_token = user.email if user else f"anon_{client_ip}"
+    if not user:
+        raise HTTPException(
+            status_code=401, 
+            detail="Authentication required: Please sign in or register to cast your verified community vote."
+        )
+
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    voter_token = user.id
 
     # Rate limiting (anti-abuse)
     if not voting_limiter.is_allowed(voter_token):
@@ -34,22 +40,83 @@ def cast_community_vote(vote: CommunityVoteCreate, request: Request):
 
     conn = get_db()
     cursor = conn.cursor()
+
+    cursor.execute("SELECT id, title, event_id FROM projects WHERE id = ?", (vote.project_id,))
+    proj = cursor.fetchone()
+    if not proj:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    event_id = proj["event_id"] or "evt_01"
     now_iso = datetime.now(timezone.utc).isoformat()
 
-    try:
+    # Check for existing ballot by this user in this competition
+    cursor.execute(
+        "SELECT id, project_id FROM ballots WHERE event_id = ? AND voter_token = ?",
+        (event_id, voter_token)
+    )
+    existing = cursor.fetchone()
+
+    if existing:
+        if existing["project_id"] == vote.project_id:
+            conn.close()
+            return {
+                "status": "success",
+                "message": f"Your ballot is already confirmed for {proj['title']}.",
+                "project_id": vote.project_id,
+                "already_selected": True
+            }
+        else:
+            # Transfer ballot from previously selected project to new project
+            cursor.execute(
+                "UPDATE ballots SET project_id = ?, voter_ip = ?, created_at = ? WHERE id = ?",
+                (vote.project_id, client_ip, now_iso, existing["id"])
+            )
+            conn.commit()
+            conn.close()
+            log_audit("COMMUNITY_VOTE_TRANSFERRED", user.name, vote.project_id, f"Transferred vote to {proj['title']}")
+            return {
+                "status": "success",
+                "message": f"Ballot updated! Your vote has been transferred to {proj['title']}.",
+                "project_id": vote.project_id,
+                "transferred": True
+            }
+    else:
         cursor.execute(
-            """INSERT INTO ballots (project_id, voter_token, voter_ip, created_at)
-               VALUES (?, ?, ?, ?)""",
-            (vote.project_id, voter_token, client_ip, now_iso)
+            """INSERT INTO ballots (event_id, project_id, voter_token, voter_ip, created_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (event_id, vote.project_id, voter_token, client_ip, now_iso)
         )
         conn.commit()
-    except Exception:
         conn.close()
-        raise HTTPException(status_code=400, detail="You have already cast a vote for this project")
+        log_audit("COMMUNITY_VOTE_CAST", user.name, vote.project_id, f"Voted for {proj['title']}")
+        return {
+            "status": "success",
+            "message": f"Ballot cast! 1 vote recorded for {proj['title']}.",
+            "project_id": vote.project_id,
+            "transferred": False
+        }
 
+@router.get("/ballot/my-vote")
+def get_my_vote(request: Request, event: str = None):
+    """Returns the authenticated user's current ballot for the active competition."""
+    user = get_current_user(request)
+    if not user:
+        return {"voted": False, "project_id": None}
+
+    conn = get_db()
+    cursor = conn.cursor()
+    event_id = event or "evt_01"
+    cursor.execute(
+        "SELECT project_id, created_at FROM ballots WHERE event_id = ? AND voter_token = ?",
+        (event_id, user.id)
+    )
+    row = cursor.fetchone()
     conn.close()
-    log_audit("COMMUNITY_VOTE_CAST", voter_token, vote.project_id, f"IP: {client_ip}")
-    return {"status": "success", "message": "Vote recorded"}
+
+    if row:
+        return {"voted": True, "project_id": row["project_id"], "created_at": row["created_at"]}
+    return {"voted": False, "project_id": None}
 
 @router.get("/comments/{project_id}")
 def get_comments(project_id: str):

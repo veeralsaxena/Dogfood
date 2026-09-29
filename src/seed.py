@@ -50,10 +50,10 @@ def seed_database():
         "org_name": "HACKATHON RAPTORS",
         "sub_org": "FELLOWSHIP OF SENIOR ENGINEERS · COMMUNITY INTEREST CO.",
         "tagline": "evaluation platform",
-        "accent_color": "#f59e0b",
-        "accent_hover": "#d97706",
+        "accent_color": "#10b981",
+        "accent_hover": "#059669",
         "crest_icon": "veritas",
-        "theme_preset": "amber",
+        "theme_preset": "emerald",
         "hero_title": "Software built for rigorous evaluation."
     })
     cursor.execute(

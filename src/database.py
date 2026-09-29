@@ -99,12 +99,12 @@ def init_db():
 
     CREATE TABLE IF NOT EXISTS ballots (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_id TEXT,
+        event_id TEXT NOT NULL,
         project_id TEXT NOT NULL REFERENCES projects(id),
         voter_token TEXT NOT NULL,
         voter_ip TEXT,
         created_at TEXT NOT NULL,
-        UNIQUE(project_id, voter_token)
+        UNIQUE(event_id, voter_token)
     );
 
     CREATE TABLE IF NOT EXISTS comments (
@@ -176,6 +176,7 @@ def init_db():
     try:
         cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_events_slug ON events(slug);")
         cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_events_join_code ON events(join_code);")
+        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_ballots_event_voter ON ballots(event_id, voter_token);")
         conn.commit()
     except sqlite3.OperationalError:
         pass

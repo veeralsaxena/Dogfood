@@ -235,7 +235,7 @@ def export_certificate(project_id: str):
 
     org_name = brand.get("org_name") or row["event_name"] or "HACKATHON RAPTORS"
     sub_org = brand.get("sub_org") or f"{brand.get('brand_name', 'VERITAS')} OFFICIAL COMPETITION"
-    accent = brand.get("accent_color") or "#f59e0b"
+    accent = brand.get("accent_color") or "#10b981"
 
     svg_content = generate_svg_certificate(
         project_id=row["id"],
