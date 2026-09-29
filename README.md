@@ -47,7 +47,7 @@ Veritas satisfies **100%** of the competition specification across T1, T2, T3, a
 # 1. Official Dogfood Acceptance Checker (T1 & T2 programmatic assertions)
 python3 spec/run.py .dogfood.toml
 
-# 2. Complete Automated Test Suite (19 tests across Tiers 1-4)
+# 2. Complete Automated Test Suite (104 tests across Tiers 1-4)
 PYTHONPATH=. .venv/bin/pytest tests/ -v
 
 # 3. Pure-Python Standalone Verifier (Recomputes math and verifies Ed25519 signature)
@@ -60,29 +60,34 @@ The verified receipt is committed at [`acceptance-report.txt`](acceptance-report
 
 ## 📐 Architecture & Key Features
 
-### 1. Raptors.dev Editorial Aesthetic
+### 1. Unstop-Style Navigational Architecture & Raptors.dev Editorial Aesthetic
+* Collapsible 64px icon-only rail expanding smoothly to 240px on hover with nested submenus, zero Cumulative Layout Shift (CLS), and role-specific views (`Participant`, `Judge`, `Organizer`, `Visitor`).
 * Styled after the official [raptors.dev](https://raptors.dev) brand: **Playfair Display** serif headlines with italic accents, **Inter** geometric body, and **JetBrains Mono** metrics.
-* Monochrome high-contrast palette with subtle hairline borders, numbered section markers (`[ 01 ] | SUBMISSIONS SHOWCASE`), and zero external CSS/font CDNs.
+* Monochrome high-contrast palette with subtle hairline borders, numbered section markers (`[ 01 ] | SUBMISSIONS SHOWCASE`), zero external CSS/font CDNs, and zero emojis.
 
-### 2. Strict Backend Role Isolation (T2)
+### 2. Production Multi-Competition & Team Formation Engine
+* Complete lifecycle management across multiple competitions simultaneously (e.g. `Sample Hack 2026`, `Raptors AI Challenge`, `MIT TechFair Grand Prix`).
+* Dynamic team formation supporting up to 4 members with direct invite links (`/team/join/{invite_code}`) providing 1-click onboarding for logged-in users and simultaneous registration + team joining for new participants.
+
+### 3. Strict Backend Role Isolation (T2)
 * Judge privacy is enforced at the controller and query level, not hidden in CSS/HTML templates.
 * A judge requesting peer scores (`/api/judge/scores?judge=judge_a` from `judge_b`) receives a strict **HTTP 403 Forbidden**.
 * Participants attempting to access judge endpoints are refused with **HTTP 403 Forbidden**.
 
-### 3. Empirical Bayes Normalization (Bonus Challenge: Hard)
+### 4. Empirical Bayes Normalization (Bonus Challenge: Hard)
 * Models judge leniency via a Two-Way Fixed Effects specification:
   $$Y_{ij} = \mu + \alpha_i + \beta_j + \epsilon_{ij}, \quad \sum_j \beta_j = 0$$
 * Accounts for uneven coverage using **Efron-Morris Empirical Bayes shrinkage**:
   $$B_i = \frac{n_i}{n_i + k}, \quad \hat{\alpha}_i^{\text{shrunk}} = B_i \cdot \hat{\alpha}_i$$
 * A project with 2 reviews retains ~71% of its signal; a project with 5 reviews retains ~86%.
 
-### 4. Bradley-Terry Pairwise Arena (Bonus Challenge: Hard)
+### 5. Bradley-Terry Pairwise Arena (Bonus Challenge: Hard)
 * Allows judges to compare two anonymous projects head-to-head.
 * Computes latent skill parameters $\pi_i$ via Minorization-Maximization:
   $$P(i \succ j) = \frac{\pi_i}{\pi_i + \pi_j}$$
 * Completely eliminates rating scale compression and subjective grading inflation.
 
-### 5. Ed25519 Cryptographic Verification (Trustless Hackathons)
+### 6. Ed25519 Cryptographic Verification (Trustless Hackathons)
 * When results are published, Veritas generates a canonical JSON bundle and signs it with an **Ed25519** private key.
 * Anyone can independently verify the results using the included zero-dependency script:
   ```bash
@@ -93,10 +98,10 @@ The verified receipt is committed at [`acceptance-report.txt`](acceptance-report
 
 ## 📂 Documentation
 
-- [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) — System architecture, security model, and offline guarantees.
-- [`DATA-MODEL.md`](docs/DATA-MODEL.md) — Relational SQLite schema, foreign keys, and migration paths.
-- [`JUDGING.md`](docs/JUDGING.md) — Complete mathematical proof for score normalization & Bradley-Terry.
-- [`THREAT-MODEL.md`](docs/THREAT-MODEL.md) — Defenses against Sybil attacks, collusion, and timing analysis.
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — System architecture, security model, and offline guarantees.
+- [`DATA-MODEL.md`](DATA-MODEL.md) — Relational SQLite schema, foreign keys, and migration paths.
+- [`JUDGING.md`](JUDGING.md) — Complete mathematical proof for score normalization & Bradley-Terry.
+- [`THREAT-MODEL.md`](THREAT-MODEL.md) — Defenses against Sybil attacks, collusion, and timing analysis.
 - [`LICENSE`](LICENSE) — OSI-approved MIT License.
 
 ---
