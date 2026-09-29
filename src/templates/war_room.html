@@ -209,7 +209,7 @@
             Copy Link
           </button>
           <button id="view-invite-qr-btn" onclick="showInviteQR(lastGeneratedToken, lastGeneratedRole)" class="btn btn-primary" style="flex:1; justify-content:center; font-size:0.8rem; padding:0.4rem;">
-            📱 View QR
+            View QR
           </button>
         </div>
       </div>
@@ -243,13 +243,14 @@
                     <span class="badge badge-emerald">Active</span>
                   {% endif %}
                 </td>
+                <td>
                   {% if not inv.used_at %}
                     <div style="display:flex; gap:0.35rem;">
                       <button onclick="navigator.clipboard.writeText(window.location.origin + '/onboard/{{ inv.token }}'); alert('Link copied!');" class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:0.75rem;">
                         Copy
                       </button>
                       <button onclick="showInviteQR('{{ inv.token }}', '{{ inv.role }}')" class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:0.75rem;">
-                        📱 QR
+                        QR Code
                       </button>
                     </div>
                   {% else %}

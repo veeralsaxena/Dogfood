@@ -200,6 +200,63 @@ def seed_database():
         )
     )
 
+    # 6. Event 06: Code Resurrection 2026 — Port Mortem (Raptors.dev Flagship)
+    cursor.execute(
+        """INSERT INTO events (id, name, slug, description, submissions_close, status, weights, organizer_id, join_code, prize_pool, branding)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            "evt_06",
+            "Code Resurrection 2026 — Port Mortem",
+            "code-resurrection-2026",
+            "Reviving forgotten software, porting legacy Unix/Amiga/NeXTSTEP codebases to modern architectures, and rebuilding abandoned digital infrastructure.",
+            "2026-11-15T23:59:59Z",
+            "active",
+            raptors_weights,
+            "org_root",
+            "RESURRECT-2026",
+            "$40,000 USD",
+            raptors_brand
+        )
+    )
+
+    # 7. Event 07: Code Olympics 2026 — Elite Programming Championship (Raptors.dev Flagship)
+    cursor.execute(
+        """INSERT INTO events (id, name, slug, description, submissions_close, status, weights, organizer_id, join_code, prize_pool, branding)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            "evt_07",
+            "Code Olympics 2026 — Elite Programming Championship",
+            "code-olympics-2026",
+            "Algorithmic precision, distributed consensus puzzle challenges, and zero-defect systems engineering under rigorous time isolation.",
+            "2026-09-30T23:59:59Z",
+            "active",
+            raptors_weights,
+            "org_root",
+            "OLYMPIC-2026",
+            "$75,000 USD",
+            raptors_brand
+        )
+    )
+
+    # 8. Event 08: AI Slop Scan Hackathon — Catch Low-Effort AI Content (Raptors.dev Flagship)
+    cursor.execute(
+        """INSERT INTO events (id, name, slug, description, submissions_close, status, weights, organizer_id, join_code, prize_pool, branding)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            "evt_08",
+            "AI Slop Scan Hackathon — Catch Low-Effort Content",
+            "ai-slop-scan-2026",
+            "Build deterministic forensic scanners, heuristic filters, and statistical attribution engines to detect and eliminate low-effort synthetic AI slop.",
+            "2026-12-01T23:59:59Z",
+            "active",
+            weights_json,
+            "org_root",
+            "NOSLOP-2026",
+            "$30,000 USD",
+            raptors_brand
+        )
+    )
+
     # Tracks for evt_01
     for trk in data.get("tracks", []):
         cursor.execute(

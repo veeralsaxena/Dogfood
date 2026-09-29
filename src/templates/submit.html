@@ -55,7 +55,7 @@
         <select id="event_select" class="search-input" style="width:100%; font-size:0.95rem; font-family:var(--font-mono);" onchange="window.location.href='/submit?event=' + this.value">
           {% for e in all_events %}
             <option value="{{ e.id }}" {% if e.id == event.id %}selected{% endif %}>
-              {{ e.name }} — Deadline: {{ e.submissions_close[:10] }} {% if e.submissions_close > now_iso %}(🟢 OPEN){% else %}(🔴 CLOSED){% endif %}
+              {{ e.name }} — Deadline: {{ e.submissions_close[:10] }} {% if e.submissions_close > now_iso %}[OPEN]{% else %}[CLOSED]{% endif %}
             </option>
           {% endfor %}
         </select>

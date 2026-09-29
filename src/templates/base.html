@@ -124,7 +124,7 @@
     <!-- Right Controls: Join Code + User Profile Menu + Theme Toggle -->
     <div class="nav-right">
       <button onclick="openJoinModal()" class="btn btn-outline" style="padding:0.35rem 0.65rem; font-size:0.75rem;" title="Join Competition with Code">
-        + Code
+        Join Code
       </button>
 
       {% if user and user.role != 'visitor' %}
@@ -146,19 +146,19 @@
             </div>
             
             {% if user.role == 'participant' %}
-            <a href="/participant/dashboard" class="user-dropdown-item">📊 My Dashboard</a>
-            <a href="/submit" class="user-dropdown-item">🚀 Submit Project</a>
+            <a href="/participant/dashboard" class="user-dropdown-item">My Dashboard</a>
+            <a href="/submit" class="user-dropdown-item">Submit Project</a>
             {% elif user.role == 'judge' %}
-            <a href="/judge" class="user-dropdown-item">⚖️ Evaluation Queue</a>
-            <a href="/arena" class="user-dropdown-item">⚔️ Pairwise Arena</a>
+            <a href="/judge" class="user-dropdown-item">Evaluation Queue</a>
+            <a href="/arena" class="user-dropdown-item">Pairwise Arena</a>
             {% elif user.role in ('organizer', 'admin') %}
-            <a href="/war-room" class="user-dropdown-item">🛰️ War Room</a>
-            <a href="/organizer/competitions" class="user-dropdown-item">🏆 Manage Competitions</a>
-            <a href="/settings" class="user-dropdown-item">⚙️ Event Settings</a>
+            <a href="/war-room" class="user-dropdown-item">War Room</a>
+            <a href="/organizer/competitions" class="user-dropdown-item">Manage Competitions</a>
+            <a href="/settings" class="user-dropdown-item">Event Settings</a>
             {% endif %}
 
-            <a href="/profile" class="user-dropdown-item">🔒 Account & Security</a>
-            <a href="javascript:void(0)" onclick="openJoinModal()" class="user-dropdown-item">🎫 Enter Join Code</a>
+            <a href="/profile" class="user-dropdown-item">Account & Security</a>
+            <a href="javascript:void(0)" onclick="openJoinModal()" class="user-dropdown-item">Enter Join Code</a>
 
             <div class="user-dropdown-divider"></div>
             <a href="/logout" class="user-dropdown-item" style="color:var(--alert-error-text);">
@@ -201,30 +201,30 @@
     <div style="display:flex; flex-direction:column; gap:0.5rem;">
       <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.25rem;">Navigation</div>
       {% if not user or user.role == 'visitor' %}
-        <a href="/competitions" class="btn btn-outline" style="justify-content:flex-start;">🏆 Competitions</a>
-        <a href="/projects" class="btn btn-outline" style="justify-content:flex-start;">🖼️ Showcase Gallery</a>
-        <a href="/vote" class="btn btn-outline" style="justify-content:flex-start;">🗳️ Community Ballot</a>
-        <a href="/audit" class="btn btn-outline" style="justify-content:flex-start;">🛡️ Verification & Audit</a>
-        <a href="/docs" target="_blank" class="btn btn-outline" style="justify-content:flex-start;">📖 API Docs</a>
+        <a href="/competitions" class="btn btn-outline" style="justify-content:flex-start;">Competitions</a>
+        <a href="/projects" class="btn btn-outline" style="justify-content:flex-start;">Showcase Gallery</a>
+        <a href="/vote" class="btn btn-outline" style="justify-content:flex-start;">Community Ballot</a>
+        <a href="/audit" class="btn btn-outline" style="justify-content:flex-start;">Verification & Audit</a>
+        <a href="/docs" target="_blank" class="btn btn-outline" style="justify-content:flex-start;">API Docs</a>
       {% elif user.role == 'participant' %}
-        <a href="/participant/dashboard" class="btn btn-outline" style="justify-content:flex-start;">📊 My Dashboard</a>
-        <a href="/submit" class="btn btn-outline" style="justify-content:flex-start;">🚀 Submit Project</a>
-        <a href="/participant/dashboard#team" class="btn btn-outline" style="justify-content:flex-start;">👥 Team Roster</a>
-        <a href="/competitions" class="btn btn-outline" style="justify-content:flex-start;">🏆 Competitions</a>
-        <a href="/projects" class="btn btn-outline" style="justify-content:flex-start;">🖼️ Showcase Gallery</a>
-        <a href="/vote" class="btn btn-outline" style="justify-content:flex-start;">🗳️ Community Ballot</a>
+        <a href="/participant/dashboard" class="btn btn-outline" style="justify-content:flex-start;">My Dashboard</a>
+        <a href="/submit" class="btn btn-outline" style="justify-content:flex-start;">Submit Project</a>
+        <a href="/participant/dashboard#team" class="btn btn-outline" style="justify-content:flex-start;">Team Roster</a>
+        <a href="/competitions" class="btn btn-outline" style="justify-content:flex-start;">Competitions</a>
+        <a href="/projects" class="btn btn-outline" style="justify-content:flex-start;">Showcase Gallery</a>
+        <a href="/vote" class="btn btn-outline" style="justify-content:flex-start;">Community Ballot</a>
       {% elif user.role == 'judge' %}
-        <a href="/judge" class="btn btn-outline" style="justify-content:flex-start;">⚖️ Evaluation Queue</a>
-        <a href="/arena" class="btn btn-outline" style="justify-content:flex-start;">⚔️ Pairwise Arena</a>
-        <a href="/competitions" class="btn btn-outline" style="justify-content:flex-start;">🏆 Competitions</a>
-        <a href="/projects" class="btn btn-outline" style="justify-content:flex-start;">🖼️ Showcase Gallery</a>
-        <a href="/audit" class="btn btn-outline" style="justify-content:flex-start;">🛡️ Audit Logs</a>
+        <a href="/judge" class="btn btn-outline" style="justify-content:flex-start;">Evaluation Queue</a>
+        <a href="/arena" class="btn btn-outline" style="justify-content:flex-start;">Pairwise Arena</a>
+        <a href="/competitions" class="btn btn-outline" style="justify-content:flex-start;">Competitions</a>
+        <a href="/projects" class="btn btn-outline" style="justify-content:flex-start;">Showcase Gallery</a>
+        <a href="/audit" class="btn btn-outline" style="justify-content:flex-start;">Audit Logs</a>
       {% elif user.role in ('organizer', 'admin') %}
-        <a href="/war-room" class="btn btn-outline" style="justify-content:flex-start;">🛰️ War Room</a>
-        <a href="/organizer/competitions" class="btn btn-outline" style="justify-content:flex-start;">🏆 Manage Competitions</a>
-        <a href="/settings" class="btn btn-outline" style="justify-content:flex-start;">⚙️ Rubric & Parameters</a>
-        <a href="/arena" class="btn btn-outline" style="justify-content:flex-start;">⚔️ Pairwise Arena</a>
-        <a href="/audit" class="btn btn-outline" style="justify-content:flex-start;">🛡️ Audit Logs</a>
+        <a href="/war-room" class="btn btn-outline" style="justify-content:flex-start;">War Room</a>
+        <a href="/organizer/competitions" class="btn btn-outline" style="justify-content:flex-start;">Manage Competitions</a>
+        <a href="/settings" class="btn btn-outline" style="justify-content:flex-start;">Rubric & Parameters</a>
+        <a href="/arena" class="btn btn-outline" style="justify-content:flex-start;">Pairwise Arena</a>
+        <a href="/audit" class="btn btn-outline" style="justify-content:flex-start;">Audit Logs</a>
       {% endif %}
     </div>
 
