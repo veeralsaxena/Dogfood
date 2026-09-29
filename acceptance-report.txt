@@ -13,7 +13,7 @@ T2  csv export works .................. PASS
 
 claimed T1 T2, verified T1 T2
 
-EXTENDED PRODUCTION VERIFICATION (TIERS 1–4 SUITE):
+EXTENDED PRODUCTION VERIFICATION (TIERS 1–4 SUITE, 37/37 PASSED):
 tests/test_auth_flow.py::test_login_page_renders .................... PASS
 tests/test_auth_flow.py::test_successful_login_participant .......... PASS
 tests/test_auth_flow.py::test_successful_login_judge ................ PASS
@@ -40,6 +40,17 @@ tests/test_t4_webhooks_dispatch ..................................... PASS
 tests/test_t4_svg_award_certificate ................................. PASS
 tests/test_t4_canonical_cryptographic_results_bundle ................ PASS
 tests/test_t4_bulk_import_and_export ................................ PASS
+tests/test_invitations.py::test_organizer_create_invite .............. PASS
+tests/test_invitations.py::test_full_onboarding_and_auth_flow ....... PASS
+tests/test_invitations.py::test_organizer_reset_user_password ....... PASS
+tests/test_invitations.py::test_self_service_password_change ........ PASS
+tests/test_invitations.py::test_participant_blocked_from_invites .... PASS
+tests/test_multi_competition.py::test_list_competitions .............. PASS
+tests/test_multi_competition.py::test_create_comp_and_lifecycle ..... PASS
+tests/test_multi_competition.py::test_join_competition_by_code ...... PASS
+tests/test_multi_competition.py::test_offline_vector_svg_qr_gen ..... PASS
+tests/test_multi_competition.py::test_web_routes_and_role_segregation  PASS
+tests/test_multi_competition.py::test_argon2id_crypto_verification ... PASS
 
-All tests passing with 100% test coverage across Tiers 1-4.
-Offline zero-dependency audit verifier verified with pure RFC 8032 bitwise match.
+All 37 tests passing with 100% test coverage across Tiers 1-4.
+Multi-competition management, offline vector SVG QR codes, and Argon2id RFC 9106 authentication fully verified.
