@@ -67,3 +67,32 @@ def test_logout_clears_session():
     assert res.status_code == 303
     assert res.headers["location"] == "/login"
     assert "session=" in res.headers.get("set-cookie", "")
+
+def test_signup_page_renders():
+    res = client.get("/signup")
+    assert res.status_code == 200
+    assert "Join Veritas" in res.text or "Registration" in res.text
+
+def test_participant_signup_flow():
+    import uuid
+    rand_email = f"user_{uuid.uuid4().hex[:8]}@builder.test"
+    res = client.post("/api/auth/signup", json={
+        "name": "Jane Developer",
+        "email": rand_email,
+        "password": "secretpassword",
+        "join_code": "RAPTOR-2026"
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "success"
+    assert data["user"]["role"] == "participant"
+    assert data["user"]["email"] == rand_email
+    assert "session=" in res.headers.get("set-cookie", "")
+
+    # Duplicate should fail
+    dup = client.post("/api/auth/signup", json={
+        "name": "Jane Developer",
+        "email": rand_email,
+        "password": "secretpassword"
+    })
+    assert dup.status_code == 400

@@ -237,9 +237,23 @@ def seed_database():
 
     log_audit("DATABASE_SEEDED", "system", "all", "Loaded fixtures.json and seeded multi-competition environment")
 
-    print("Seeded successfully with multi-competition support.")
-    print(f"  Event 1: evt_01 (Sample Hack 2026) - Code: SAMPLE-2026")
-    print(f"  Event 2: evt_02 (Raptors AI & Systems Challenge 2026) - Code: RAPTOR-2026")
+    print("""
+================================================================================
+                    VERITAS PLATFORM — SEEDED CREDENTIALS
+================================================================================
+ ROLE        EMAIL                     PASSWORD      DEFAULT CONTEXT
+--------------------------------------------------------------------------------
+ Organizer   organizer@dogfood.local   password123   Command Center / War Room
+ Participant participant@example.org   password123   Team Nightshift (Sample Hack)
+ Participant lead@teamalpha.local      password123   Team Apex (Raptors AI Challenge)
+ Judge       ada@example.org           password123   Track: Developer Tools
+ Judge       judge_b@example.org       password123   Track: Infrastructure
+--------------------------------------------------------------------------------
+ Active Competition Join Codes:
+   • evt_01: SAMPLE-2026 (Sample Hack 2026 - Official Fixture Event)
+   • evt_02: RAPTOR-2026 (Raptors AI & Systems Challenge 2026 - Open Live)
+================================================================================
+""")
 
 if __name__ == "__main__":
     seed_database()

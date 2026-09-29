@@ -36,47 +36,71 @@
       </button>
 
       <div id="login-error" style="display:none; margin-top:1rem; padding:0.75rem; background:rgba(239, 68, 68, 0.15); border:1px solid #ef4444; border-radius:4px; color:#fca5a5; font-size:0.85rem;"></div>
+      <div id="login-info" style="display:none; margin-top:1rem; padding:0.75rem; background:rgba(59, 130, 246, 0.15); border:1px solid #3b82f6; border-radius:4px; color:#93c5fd; font-size:0.85rem;"></div>
     </form>
+
+    <div style="margin-top: 1.5rem; text-align: center; font-size:0.85rem;">
+      <span style="color:var(--text-muted);">New participant?</span>
+      <a href="/signup" style="color:var(--text-primary); font-weight:600; text-decoration:none; margin-left:0.35rem;">
+        Register your account →
+      </a>
+    </div>
 
     <div style="position:relative; margin: 2rem 0; text-align:center;">
       <hr style="border:none; border-top:1px solid var(--border);" />
       <span style="position:absolute; top:-0.65rem; left:50%; transform:translateX(-50%); background:var(--bg-surface); padding:0 0.75rem; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">
-        Or Quick Select Profile
+        Dev & Evaluator Quick Autofill
       </span>
     </div>
 
     <!-- Quick Sign-in Profile Cards -->
+    <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.75rem; line-height:1.4;">
+      Click any profile below to autofill its seeded credentials into the form:
+    </p>
+
     <div style="display:flex; flex-direction:column; gap:0.6rem;">
-      <div onclick="quickLogin('participant@example.org', 'password123')" class="card" style="padding:0.75rem 1rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); border-color:var(--border);" onmouseover="this.style.borderColor='var(--text-primary)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div onclick="selectProfile('participant@example.org', 'password123', 'Participant')" class="card" style="padding:0.75rem 1rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); border-color:var(--border);" onmouseover="this.style.borderColor='var(--text-primary)'" onmouseout="this.style.borderColor='var(--border)'">
         <div>
           <div style="font-weight:600; font-size:0.9rem;">Participant Profile</div>
           <div style="font-size:0.75rem; color:var(--text-muted);">participant@example.org · Team Nightshift</div>
         </div>
-        <span class="badge badge-accent">Participant →</span>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span class="badge badge-accent">Autofill</span>
+          <button type="button" onclick="event.stopPropagation(); quickLogin('participant@example.org', 'password123');" class="btn btn-outline" style="padding:0.2rem 0.5rem; font-size:0.7rem;">Sign In</button>
+        </div>
       </div>
 
-      <div onclick="quickLogin('ada@example.org', 'password123')" class="card" style="padding:0.75rem 1rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); border-color:var(--border);" onmouseover="this.style.borderColor='var(--text-primary)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div onclick="selectProfile('ada@example.org', 'password123', 'Judge Ada')" class="card" style="padding:0.75rem 1rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); border-color:var(--border);" onmouseover="this.style.borderColor='var(--text-primary)'" onmouseout="this.style.borderColor='var(--border)'">
         <div>
           <div style="font-weight:600; font-size:0.9rem;">Judge Ada Okonkwo</div>
           <div style="font-size:0.75rem; color:var(--text-muted);">ada@example.org · Track: Developer Tools</div>
         </div>
-        <span class="badge badge-purple">Judge →</span>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span class="badge badge-purple">Autofill</span>
+          <button type="button" onclick="event.stopPropagation(); quickLogin('ada@example.org', 'password123');" class="btn btn-outline" style="padding:0.2rem 0.5rem; font-size:0.7rem;">Sign In</button>
+        </div>
       </div>
 
-      <div onclick="quickLogin('judge_b@example.org', 'password123')" class="card" style="padding:0.75rem 1rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); border-color:var(--border);" onmouseover="this.style.borderColor='var(--text-primary)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div onclick="selectProfile('judge_b@example.org', 'password123', 'Judge Beta')" class="card" style="padding:0.75rem 1rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); border-color:var(--border);" onmouseover="this.style.borderColor='var(--text-primary)'" onmouseout="this.style.borderColor='var(--border)'">
         <div>
           <div style="font-weight:600; font-size:0.9rem;">Judge Beta</div>
           <div style="font-size:0.75rem; color:var(--text-muted);">judge_b@example.org · Track: Infrastructure</div>
         </div>
-        <span class="badge badge-purple">Judge →</span>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span class="badge badge-purple">Autofill</span>
+          <button type="button" onclick="event.stopPropagation(); quickLogin('judge_b@example.org', 'password123');" class="btn btn-outline" style="padding:0.2rem 0.5rem; font-size:0.7rem;">Sign In</button>
+        </div>
       </div>
 
-      <div onclick="quickLogin('organizer@dogfood.local', 'password123')" class="card" style="padding:0.75rem 1rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); border-color:var(--border);" onmouseover="this.style.borderColor='var(--text-primary)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div onclick="selectProfile('organizer@dogfood.local', 'password123', 'Organizer')" class="card" style="padding:0.75rem 1rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); border-color:var(--border);" onmouseover="this.style.borderColor='var(--text-primary)'" onmouseout="this.style.borderColor='var(--border)'">
         <div>
           <div style="font-weight:600; font-size:0.9rem;">Operations Lead</div>
           <div style="font-size:0.75rem; color:var(--text-muted);">organizer@dogfood.local · Command Center</div>
         </div>
-        <span class="badge badge-emerald">Organizer →</span>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span class="badge badge-emerald">Autofill</span>
+          <button type="button" onclick="event.stopPropagation(); quickLogin('organizer@dogfood.local', 'password123');" class="btn btn-outline" style="padding:0.2rem 0.5rem; font-size:0.7rem;">Sign In</button>
+        </div>
       </div>
     </div>
   </div>
@@ -128,6 +152,28 @@ function quickLogin(email, password) {
   document.getElementById("email-input").value = email;
   document.getElementById("password-input").value = password;
   performLogin(email, password);
+}
+
+function selectProfile(email, password, label) {
+  const emailInput = document.getElementById("email-input");
+  const pwInput = document.getElementById("password-input");
+  const infoDiv = document.getElementById("login-info");
+  const errDiv = document.getElementById("login-error");
+
+  errDiv.style.display = "none";
+  emailInput.value = email;
+  pwInput.value = password;
+
+  // Flash highlight effect
+  emailInput.style.borderColor = "#3b82f6";
+  pwInput.style.borderColor = "#3b82f6";
+  setTimeout(() => {
+    emailInput.style.borderColor = "";
+    pwInput.style.borderColor = "";
+  }, 1200);
+
+  infoDiv.innerText = `Autofilled credentials for ${label} (${email}). Click "Sign In to Workspace" to authenticate.`;
+  infoDiv.style.display = "block";
 }
 </script>
 {% endblock %}

@@ -31,6 +31,73 @@ class PasswordChangeRequest(BaseModel):
 class PasswordResetRequest(BaseModel):
     new_password: Optional[str] = "password123"
 
+class SignupRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    join_code: Optional[str] = "RAPTOR-2026"
+
+@router.post("/api/auth/signup")
+def signup_user(payload: SignupRequest, response: Response):
+    email = payload.email.strip().lower()
+    name = payload.name.strip()
+    if not email or not payload.password:
+        raise HTTPException(status_code=400, detail="Name, email and password are required")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM users WHERE LOWER(email) = ?", (email,))
+    if cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=400, detail="An account with this email already exists. Please sign in.")
+
+    # Find event by join_code if provided, default to evt_02
+    event_id = "evt_02"
+    if payload.join_code:
+        code = payload.join_code.strip().upper()
+        cursor.execute("SELECT id FROM events WHERE UPPER(join_code) = ? OR id = ?", (code, payload.join_code.strip()))
+        ev = cursor.fetchone()
+        if ev:
+            event_id = ev["id"]
+
+    user_id = f"prt_{secrets.token_hex(4)}"
+    user_token = f"token_{secrets.token_hex(16)}"
+    hashed_pw = hash_password(payload.password.strip())
+    now = datetime.now(timezone.utc).isoformat()
+
+    cursor.execute(
+        """INSERT INTO users (id, name, email, role, token, password, tracks)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (user_id, name, email, "participant", user_token, hashed_pw, "[]")
+    )
+
+    cursor.execute(
+        """INSERT INTO event_registrations (event_id, user_id, role, joined_at)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(event_id, user_id) DO NOTHING""",
+        (event_id, user_id, "participant", now)
+    )
+
+    conn.commit()
+    conn.close()
+
+    log_audit("user_signup", user_id, "participant", f"New user {email} signed up for {event_id}")
+
+    response.set_cookie(key="session", value=user_token, path="/", httponly=False)
+
+    return {
+        "status": "success",
+        "user": {
+            "id": user_id,
+            "name": name,
+            "email": email,
+            "role": "participant"
+        },
+        "token": user_token,
+        "redirect_url": "/participant/dashboard"
+    }
+
 @router.post("/api/organizer/invites")
 def create_invite(payload: InviteCreateRequest, user: UserPrincipal = Depends(require_role(["organizer", "admin"]))):
     if payload.role not in ("judge", "participant"):

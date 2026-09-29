@@ -649,6 +649,33 @@ def login_view(request: Request, join_code: str = Query(None)):
         }
     )
 
+@router.get("/signup", response_class=HTMLResponse)
+def signup_view(request: Request, join_code: str = Query(None)):
+    user = get_current_user(request)
+    if user:
+        if user.role == "participant":
+            return RedirectResponse(url="/participant/dashboard", status_code=303)
+        elif user.role == "judge":
+            return RedirectResponse(url="/judge", status_code=303)
+        elif user.role in ("organizer", "admin"):
+            return RedirectResponse(url="/war-room", status_code=303)
+        else:
+            return RedirectResponse(url="/projects", status_code=303)
+
+    active_event = get_active_event_context(request)
+    all_events = get_all_events()
+    return templates.TemplateResponse(
+        request=request,
+        name="signup.html",
+        context={
+            "active_page": "signup",
+            "user": None,
+            "join_code": join_code or "RAPTOR-2026",
+            "active_event": active_event,
+            "all_events": all_events
+        }
+    )
+
 @router.post("/api/auth/login")
 def auth_login(payload: LoginRequest, response: Response):
     auth_result = authenticate_user(payload.email, payload.password)
