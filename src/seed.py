@@ -140,6 +140,66 @@ def seed_database():
         )
     )
 
+    # 4. Event 04: Speed Demon 2026 — Every Millisecond Is a Soul (Raptors.dev Flagship)
+    speed_brand = json.dumps({
+        "brand_name": "SPEED DEMON",
+        "org_name": "Hackathon Raptors Fellowship",
+        "sub_org": "FELLOWSHIP OF SENIOR ENGINEERS · SYSTEMS DIVISION",
+        "tagline": "every millisecond is a soul",
+        "accent_color": "#10b981",
+        "accent_hover": "#059669",
+        "crest_icon": "raptors",
+        "theme_preset": "emerald",
+        "hero_title": "Sub-Microsecond Systems Engineering Championship."
+    })
+    cursor.execute(
+        """INSERT INTO events (id, name, slug, description, submissions_close, status, weights, organizer_id, join_code, prize_pool, branding)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            "evt_04",
+            "Speed Demon 2026 — Every Millisecond Is a Soul",
+            "speed-demon-2026",
+            "Low-latency systems programming championship. Sub-microsecond event loops, lock-free data structures, SIMD acceleration, and io_uring / DPDK pipelines.",
+            "2026-10-31T23:59:59Z",
+            "active",
+            raptors_weights,
+            "org_root",
+            "SPEED-2026",
+            "$50,000 USD",
+            speed_brand
+        )
+    )
+
+    # 5. Event 05: Zero Dependency 2026 — Ship With an Empty Manifest (Raptors.dev Flagship)
+    zero_brand = json.dumps({
+        "brand_name": "ZERO DEPENDENCY",
+        "org_name": "Hackathon Raptors Fellowship",
+        "sub_org": "FELLOWSHIP OF SENIOR ENGINEERS · CORE ARCHITECTURE",
+        "tagline": "empty manifest challenge",
+        "accent_color": "#10b981",
+        "accent_hover": "#059669",
+        "crest_icon": "raptors",
+        "theme_preset": "emerald",
+        "hero_title": "Ship Useful Software With an Empty Manifest."
+    })
+    cursor.execute(
+        """INSERT INTO events (id, name, slug, description, submissions_close, status, weights, organizer_id, join_code, prize_pool, branding)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            "evt_05",
+            "Zero Dependency 2026 — Ship With an Empty Manifest",
+            "zero-dependency-2026",
+            "Pure self-contained software engineering. Build production-grade utilities, compilers, or operating systems with zero external libraries or cloud dependencies.",
+            "2026-12-15T23:59:59Z",
+            "active",
+            weights_json,
+            "org_root",
+            "ZERO-2026",
+            "$35,000 USD",
+            zero_brand
+        )
+    )
+
     # Tracks for evt_01
     for trk in data.get("tracks", []):
         cursor.execute(
@@ -162,6 +222,18 @@ def seed_database():
                    ("trk_m2", "evt_03", "Autonomous Robotics & Perception", "Embodied intelligence, edge inference, real-time control"))
     cursor.execute("INSERT INTO tracks (id, event_id, name, description) VALUES (?, ?, ?, ?)",
                    ("trk_m3", "evt_03", "Distributed Systems & Cloud-Free Infrastructure", "Zero-cloud architectures and localized peer consensus"))
+
+    # Tracks for evt_04 (Speed Demon)
+    cursor.execute("INSERT INTO tracks (id, event_id, name, description) VALUES (?, ?, ?, ?)",
+                   ("trk_sd1", "evt_04", "Kernel Bypass & Network IO (io_uring / DPDK)", "Zero-copy networking and event loops"))
+    cursor.execute("INSERT INTO tracks (id, event_id, name, description) VALUES (?, ?, ?, ?)",
+                   ("trk_sd2", "evt_04", "Lock-Free Concurrency & SIMD", "Cache-conscious architectures and vector parallelism"))
+
+    # Tracks for evt_05 (Zero Dependency)
+    cursor.execute("INSERT INTO tracks (id, event_id, name, description) VALUES (?, ?, ?, ?)",
+                   ("trk_zd1", "evt_05", "Self-Hosting Compilers & Toolchains", "Compilers and interpreters built from scratch"))
+    cursor.execute("INSERT INTO tracks (id, event_id, name, description) VALUES (?, ?, ?, ?)",
+                   ("trk_zd2", "evt_05", "Pure Standard Library Utilities", "Zero third-party library dependencies"))
 
     # Teams for evt_01
     for tm in data.get("teams", []):
@@ -341,6 +413,8 @@ def seed_database():
    • evt_01: SAMPLE-2026 (Sample Hack 2026 - Official Fixture Event)
    • evt_02: RAPTOR-2026 (Raptors AI & Systems Challenge 2026 - Open Live)
    • evt_03: MIT-2026    (MIT TechFair AI Grand Prix 2026 - Institutional Portal)
+   • evt_04: SPEED-2026  (Speed Demon 2026 — Every Millisecond Is a Soul)
+   • evt_05: ZERO-2026   (Zero Dependency 2026 — Ship With an Empty Manifest)
  Institutional White-Label Portals:
    • Veritas Benchmark:  http://localhost:8080/org/sample-hack-2026
    • Raptors Fellowship: http://localhost:8080/org/raptors-ai-2026

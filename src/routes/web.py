@@ -69,11 +69,20 @@ def get_all_events():
     cursor.execute("""
         SELECT e.*,
             (SELECT COUNT(*) FROM projects p WHERE p.event_id = e.id AND p.is_draft = 0) as project_count,
-            (SELECT COUNT(*) FROM tracks t WHERE t.event_id = e.id) as track_count
+            (SELECT COUNT(*) FROM tracks t WHERE t.event_id = e.id) as track_count,
+            (SELECT GROUP_CONCAT(name, ' · ') FROM tracks t WHERE t.event_id = e.id) as track_names
         FROM events e
         ORDER BY e.submissions_close DESC
     """)
-    rows = [dict(r) for r in cursor.fetchall()]
+    rows = []
+    for r in cursor.fetchall():
+        d = dict(r)
+        if d.get("branding"):
+            try:
+                d["brand"] = json.loads(d["branding"])
+            except Exception:
+                d["brand"] = {}
+        rows.append(d)
     conn.close()
     return rows
 

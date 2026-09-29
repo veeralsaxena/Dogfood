@@ -42,10 +42,10 @@
   </style>
 </head>
 <body>
-  <!-- Primary Product Navbar (Role-Segregated) -->
-  <nav class="navbar" style="border-bottom: 1px solid var(--border); background: var(--bg-surface); padding: 0.75rem 2rem;">
-    <div style="display:flex; align-items:center; gap:1.5rem;">
-      <a href="/projects" class="brand-wrapper" style="text-decoration:none; display:flex; align-items:center; gap:0.6rem;">
+  <!-- Primary Luxury Editorial Navbar (Raptors.dev Aligned) -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <a href="/projects" class="brand-wrapper" title="Veritas // Evaluation Engine">
         {% if active_event and active_event.brand and active_event.brand.crest_icon == 'mit' %}
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ active_event.brand.accent_color }}" stroke-width="2.5" stroke-linecap="round">
           <path d="M3 4v16M8 4v16M13 4v8M18 4v16M22 4v16"/>
@@ -69,83 +69,108 @@
           <path d="M17.48 20.42V27.61L25.2 23.05V15.78L17.48 20.42Z" fill="currentColor"/>
         </svg>
         {% endif %}
-        <span class="brand-title" style="font-weight:700; letter-spacing:0.05em; font-size:1.05rem;">
-          {{ (active_event.brand.brand_name if active_event and active_event.brand and active_event.brand.brand_name else 'VERITAS') | upper }} 
-          <span class="serif-italic" style="text-transform:lowercase; font-size:0.95rem; color:var(--text-muted); font-weight:400;">
-            // {{ active_event.brand.tagline if active_event and active_event.brand and active_event.brand.tagline else 'evaluation platform' }}
+        <span class="brand-title">
+          {{ (active_event.brand.brand_name if active_event and active_event.brand and active_event.brand.brand_name else 'VERITAS') | upper }}
+          <span class="brand-tagline">
+            // {{ active_event.brand.tagline if active_event and active_event.brand and active_event.brand.tagline else 'evaluation engine' }}
           </span>
         </span>
       </a>
 
-      <!-- Active Competition Selector -->
+      <!-- Active Competition Selector Pill -->
       {% if active_event %}
-      <a href="/competitions" style="text-decoration:none;">
-        <span class="badge" style="font-size:0.75rem; padding:0.25rem 0.65rem; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-secondary); cursor:pointer; display:inline-flex; align-items:center; gap:0.45rem;" title="Click to view all competitions or switch">
-          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--emerald);"></span>
-          <span>{{ active_event.name }}</span>
-        </span>
+      <a href="/competitions" class="nav-event-pill" title="Current Competition: {{ active_event.name }} (Click to switch)">
+        <span class="nav-event-dot"></span>
+        <span>{{ active_event.name }}</span>
       </a>
       {% endif %}
     </div>
 
-    <!-- Dynamic Role-Segregated Navigation Links -->
-    <ul class="nav-links" style="display:flex; list-style:none; gap:1.25rem; margin:0; padding:0;">
-      {% if not user or user.role == 'visitor' %}
-        <!-- VISITOR NAVIGATION -->
-        <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
-        <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase Gallery</a></li>
-        <li><a href="/vote" class="nav-link {% if active_page == 'vote' %}active{% endif %}">Community Ballot</a></li>
-        <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Verification & Audit</a></li>
-        <li><a href="/docs" target="_blank" class="nav-link">API Docs</a></li>
+    <!-- Center Navigation Links (Clean Single-Word, Non-Wrapping) -->
+    <div class="nav-center">
+      <ul class="nav-links">
+        {% if not user or user.role == 'visitor' %}
+          <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
+          <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
+          <li><a href="/vote" class="nav-link {% if active_page == 'vote' %}active{% endif %}">Ballot</a></li>
+          <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Audit</a></li>
+          <li><a href="/docs" target="_blank" class="nav-link">API Docs</a></li>
 
-      {% elif user.role == 'participant' %}
-        <!-- PARTICIPANT NAVIGATION -->
-        <li><a href="/participant/dashboard" class="nav-link {% if active_page == 'participant_dash' %}active{% endif %}">My Dashboard</a></li>
-        <li><a href="/submit" class="nav-link {% if active_page == 'submit' %}active{% endif %}">Project Submission</a></li>
-        <li><a href="/participant/dashboard#team" class="nav-link {% if active_page == 'team' %}active{% endif %}">Team Roster</a></li>
-        <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
-        <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
-        <li><a href="/vote" class="nav-link {% if active_page == 'vote' %}active{% endif %}">Ballot</a></li>
+        {% elif user.role == 'participant' %}
+          <li><a href="/participant/dashboard" class="nav-link {% if active_page == 'participant_dash' %}active{% endif %}">Dashboard</a></li>
+          <li><a href="/submit" class="nav-link {% if active_page == 'submit' %}active{% endif %}">Submit</a></li>
+          <li><a href="/participant/dashboard#team" class="nav-link {% if active_page == 'team' %}active{% endif %}">Team</a></li>
+          <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
+          <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
+          <li><a href="/vote" class="nav-link {% if active_page == 'vote' %}active{% endif %}">Ballot</a></li>
 
-      {% elif user.role == 'judge' %}
-        <!-- JUDGE NAVIGATION -->
-        <li><a href="/judge" class="nav-link {% if active_page == 'judge' %}active{% endif %}">Evaluation Queue</a></li>
-        <li><a href="/arena" class="nav-link {% if active_page == 'arena' %}active{% endif %}">Pairwise Arena</a></li>
-        <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
-        <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
-        <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Audit & Math</a></li>
+        {% elif user.role == 'judge' %}
+          <li><a href="/judge" class="nav-link {% if active_page == 'judge' %}active{% endif %}">Queue</a></li>
+          <li><a href="/arena" class="nav-link {% if active_page == 'arena' %}active{% endif %}">Arena</a></li>
+          <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
+          <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
+          <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Audit</a></li>
 
-      {% elif user.role in ('organizer', 'admin') %}
-        <!-- ORGANIZER / ADMIN NAVIGATION -->
-        <li><a href="/war-room" class="nav-link {% if active_page == 'war_room' %}active{% endif %}">War Room</a></li>
-        <li><a href="/organizer/competitions" class="nav-link {% if active_page == 'org_competitions' %}active{% endif %}">Manage Competitions</a></li>
-        <li><a href="/settings" class="nav-link {% if active_page == 'settings' %}active{% endif %}">Rubric & Criteria</a></li>
-        <li><a href="/arena" class="nav-link {% if active_page == 'arena' %}active{% endif %}">Pairwise Arena</a></li>
-        <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Audit Logs</a></li>
-      {% endif %}
-    </ul>
+        {% elif user.role in ('organizer', 'admin') %}
+          <li><a href="/war-room" class="nav-link {% if active_page == 'war_room' %}active{% endif %}">War Room</a></li>
+          <li><a href="/organizer/competitions" class="nav-link {% if active_page == 'org_competitions' %}active{% endif %}">Competitions</a></li>
+          <li><a href="/settings" class="nav-link {% if active_page == 'settings' %}active{% endif %}">Rubric</a></li>
+          <li><a href="/arena" class="nav-link {% if active_page == 'arena' %}active{% endif %}">Arena</a></li>
+          <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Audit</a></li>
+        {% endif %}
+      </ul>
+    </div>
 
-    <!-- Right Controls: Profile / Login / Theme -->
-    <div style="display:flex; align-items:center; gap:0.75rem;">
-      <button onclick="openJoinModal()" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem;" title="Join Competition with Code">
-        + Join with Code
+    <!-- Right Controls: Join Code + User Profile Menu + Theme Toggle -->
+    <div class="nav-right">
+      <button onclick="openJoinModal()" class="btn btn-outline" style="padding:0.35rem 0.65rem; font-size:0.75rem;" title="Join Competition with Code">
+        + Code
       </button>
 
       {% if user and user.role != 'visitor' %}
-        <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; font-family:var(--font-mono); color:var(--text-secondary); background:var(--bg-secondary); padding:0.35rem 0.75rem; border:1px solid var(--border); border-radius:4px;">
-          <span>{{ user.name }}</span>
-          <span class="badge {% if user.role == 'organizer' %}badge-emerald{% elif user.role == 'judge' %}badge-purple{% else %}badge-accent{% endif %}" style="font-size:0.65rem; padding:0.15rem 0.4rem; text-transform:uppercase;">
-            {{ user.role }}
-          </span>
+        <!-- Compact Luxury Account Dropdown Menu -->
+        <div class="user-menu" id="nav-user-menu">
+          <button type="button" class="user-menu-btn" onclick="toggleUserDropdown(event)" aria-label="User Account Menu">
+            <span class="user-avatar-circle">{{ (user.name or user.role)[:1] | upper }}</span>
+            <span style="font-weight:600; font-size:0.8rem;">{{ user.name.split()[0] if user.name else user.role }}</span>
+            <span class="badge {% if user.role == 'organizer' %}badge-emerald{% elif user.role == 'judge' %}badge-purple{% else %}badge-accent{% endif %}" style="font-size:0.62rem; padding:0.1rem 0.35rem; text-transform:uppercase;">
+              {{ user.role }}
+            </span>
+            <span style="font-size:0.65rem; color:var(--text-muted); margin-left:0.15rem;">▾</span>
+          </button>
+
+          <div class="user-dropdown" id="nav-user-dropdown">
+            <div class="user-dropdown-header">
+              <div style="font-weight:600; font-size:0.85rem; color:var(--text-primary);">{{ user.name }}</div>
+              <div style="font-size:0.72rem; color:var(--text-muted); font-family:var(--font-mono); text-overflow:ellipsis; overflow:hidden;">{{ user.email }}</div>
+            </div>
+            
+            {% if user.role == 'participant' %}
+            <a href="/participant/dashboard" class="user-dropdown-item">📊 My Dashboard</a>
+            <a href="/submit" class="user-dropdown-item">🚀 Submit Project</a>
+            {% elif user.role == 'judge' %}
+            <a href="/judge" class="user-dropdown-item">⚖️ Evaluation Queue</a>
+            <a href="/arena" class="user-dropdown-item">⚔️ Pairwise Arena</a>
+            {% elif user.role in ('organizer', 'admin') %}
+            <a href="/war-room" class="user-dropdown-item">🛰️ War Room</a>
+            <a href="/organizer/competitions" class="user-dropdown-item">🏆 Manage Competitions</a>
+            <a href="/settings" class="user-dropdown-item">⚙️ Event Settings</a>
+            {% endif %}
+
+            <a href="/profile" class="user-dropdown-item">🔒 Account & Security</a>
+            <a href="javascript:void(0)" onclick="openJoinModal()" class="user-dropdown-item">🎫 Enter Join Code</a>
+
+            <div class="user-dropdown-divider"></div>
+            <a href="/logout" class="user-dropdown-item" style="color:var(--alert-error-text);">
+              Sign Out →
+            </a>
+          </div>
         </div>
-        <a href="/logout" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem;">
-          Sign Out
-        </a>
       {% else %}
-        <a href="/login" class="btn btn-outline" style="padding:0.4rem 0.85rem; font-size:0.78rem;">
+        <a href="/login" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem;">
           Sign In
         </a>
-        <a href="/signup" class="btn btn-primary" style="padding:0.4rem 0.85rem; font-size:0.78rem;">
+        <a href="/signup" class="btn btn-primary" style="padding:0.35rem 0.75rem; font-size:0.75rem;">
           Register
         </a>
       {% endif %}
@@ -153,8 +178,76 @@
       <button onclick="toggleTheme()" class="btn btn-outline" style="padding:0.35rem 0.55rem; font-size:0.75rem;" title="Toggle Dark/Light Mode">
         ◐
       </button>
+
+      <!-- Mobile Hamburger Toggle -->
+      <button type="button" class="mobile-toggle" onclick="toggleMobileDrawer()" aria-label="Toggle Navigation">
+        ☰
+      </button>
     </div>
   </nav>
+
+  <!-- Mobile Drawer Menu -->
+  <div class="mobile-drawer" id="mobile-drawer">
+    {% if active_event %}
+    <div style="padding-bottom:0.75rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Current Event</span>
+      <a href="/competitions" class="nav-event-pill">
+        <span class="nav-event-dot"></span>
+        <span>{{ active_event.name }}</span>
+      </a>
+    </div>
+    {% endif %}
+
+    <div style="display:flex; flex-direction:column; gap:0.5rem;">
+      <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.25rem;">Navigation</div>
+      {% if not user or user.role == 'visitor' %}
+        <a href="/competitions" class="btn btn-outline" style="justify-content:flex-start;">🏆 Competitions</a>
+        <a href="/projects" class="btn btn-outline" style="justify-content:flex-start;">🖼️ Showcase Gallery</a>
+        <a href="/vote" class="btn btn-outline" style="justify-content:flex-start;">🗳️ Community Ballot</a>
+        <a href="/audit" class="btn btn-outline" style="justify-content:flex-start;">🛡️ Verification & Audit</a>
+        <a href="/docs" target="_blank" class="btn btn-outline" style="justify-content:flex-start;">📖 API Docs</a>
+      {% elif user.role == 'participant' %}
+        <a href="/participant/dashboard" class="btn btn-outline" style="justify-content:flex-start;">📊 My Dashboard</a>
+        <a href="/submit" class="btn btn-outline" style="justify-content:flex-start;">🚀 Submit Project</a>
+        <a href="/participant/dashboard#team" class="btn btn-outline" style="justify-content:flex-start;">👥 Team Roster</a>
+        <a href="/competitions" class="btn btn-outline" style="justify-content:flex-start;">🏆 Competitions</a>
+        <a href="/projects" class="btn btn-outline" style="justify-content:flex-start;">🖼️ Showcase Gallery</a>
+        <a href="/vote" class="btn btn-outline" style="justify-content:flex-start;">🗳️ Community Ballot</a>
+      {% elif user.role == 'judge' %}
+        <a href="/judge" class="btn btn-outline" style="justify-content:flex-start;">⚖️ Evaluation Queue</a>
+        <a href="/arena" class="btn btn-outline" style="justify-content:flex-start;">⚔️ Pairwise Arena</a>
+        <a href="/competitions" class="btn btn-outline" style="justify-content:flex-start;">🏆 Competitions</a>
+        <a href="/projects" class="btn btn-outline" style="justify-content:flex-start;">🖼️ Showcase Gallery</a>
+        <a href="/audit" class="btn btn-outline" style="justify-content:flex-start;">🛡️ Audit Logs</a>
+      {% elif user.role in ('organizer', 'admin') %}
+        <a href="/war-room" class="btn btn-outline" style="justify-content:flex-start;">🛰️ War Room</a>
+        <a href="/organizer/competitions" class="btn btn-outline" style="justify-content:flex-start;">🏆 Manage Competitions</a>
+        <a href="/settings" class="btn btn-outline" style="justify-content:flex-start;">⚙️ Rubric & Parameters</a>
+        <a href="/arena" class="btn btn-outline" style="justify-content:flex-start;">⚔️ Pairwise Arena</a>
+        <a href="/audit" class="btn btn-outline" style="justify-content:flex-start;">🛡️ Audit Logs</a>
+      {% endif %}
+    </div>
+
+    <div style="border-top:1px solid var(--border); padding-top:1rem; display:flex; flex-direction:column; gap:0.5rem;">
+      <button onclick="openJoinModal(); toggleMobileDrawer();" class="btn btn-primary" style="justify-content:center;">
+        + Join with Competition Code
+      </button>
+
+      {% if user and user.role != 'visitor' %}
+        <a href="/profile" class="btn btn-outline" style="justify-content:center;">
+          Account & Security ({{ user.name }})
+        </a>
+        <a href="/logout" class="btn btn-outline" style="justify-content:center; color:var(--alert-error-text);">
+          Sign Out
+        </a>
+      {% else %}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+          <a href="/login" class="btn btn-outline" style="justify-content:center;">Sign In</a>
+          <a href="/signup" class="btn btn-primary" style="justify-content:center;">Register</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
 
   <!-- Join Competition Modal -->
   <div id="join-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center;">
@@ -204,6 +297,26 @@
 
   <script src="/static/js/app.js"></script>
   <script>
+    function toggleUserDropdown(e) {
+      if (e) e.stopPropagation();
+      const d = document.getElementById('nav-user-dropdown');
+      if (d) d.classList.toggle('show');
+    }
+
+    function toggleMobileDrawer() {
+      const d = document.getElementById('mobile-drawer');
+      if (d) d.classList.toggle('open');
+    }
+
+    document.addEventListener('click', function(e) {
+      const dropdown = document.getElementById('nav-user-dropdown');
+      if (dropdown && dropdown.classList.contains('show')) {
+        if (!dropdown.contains(e.target) && !e.target.closest('.user-menu-btn')) {
+          dropdown.classList.remove('show');
+        }
+      }
+    });
+
     function openJoinModal() {
       const m = document.getElementById('join-modal');
       if (m) {
