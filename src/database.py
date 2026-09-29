@@ -18,20 +18,27 @@ def init_db():
     CREATE TABLE IF NOT EXISTS events (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
+        slug TEXT,
         description TEXT,
         submissions_close TEXT NOT NULL,
         status TEXT DEFAULT 'active',
-        weights TEXT NOT NULL
+        weights TEXT NOT NULL,
+        organizer_id TEXT,
+        join_code TEXT,
+        banner_url TEXT,
+        prize_pool TEXT
     );
 
     CREATE TABLE IF NOT EXISTS tracks (
         id TEXT PRIMARY KEY,
+        event_id TEXT,
         name TEXT NOT NULL,
         description TEXT
     );
 
     CREATE TABLE IF NOT EXISTS teams (
         id TEXT PRIMARY KEY,
+        event_id TEXT,
         name TEXT NOT NULL,
         members TEXT NOT NULL, -- JSON array of emails
         invite_code TEXT UNIQUE
@@ -47,8 +54,17 @@ def init_db():
         tracks TEXT -- JSON array of track ids
     );
 
+    CREATE TABLE IF NOT EXISTS event_registrations (
+        event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        role TEXT NOT NULL,
+        joined_at TEXT NOT NULL,
+        PRIMARY KEY (event_id, user_id)
+    );
+
     CREATE TABLE IF NOT EXISTS projects (
         id TEXT PRIMARY KEY,
+        event_id TEXT,
         team_id TEXT REFERENCES teams(id),
         track_id TEXT REFERENCES tracks(id),
         title TEXT NOT NULL,
@@ -62,6 +78,7 @@ def init_db():
 
     CREATE TABLE IF NOT EXISTS scores (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id TEXT,
         judge_id TEXT NOT NULL REFERENCES users(id),
         project_id TEXT NOT NULL REFERENCES projects(id),
         criteria TEXT NOT NULL, -- JSON dict {criteria_name: score_int}
@@ -72,6 +89,7 @@ def init_db():
 
     CREATE TABLE IF NOT EXISTS pairwise_votes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id TEXT,
         judge_id TEXT NOT NULL REFERENCES users(id),
         winner_id TEXT NOT NULL REFERENCES projects(id),
         loser_id TEXT NOT NULL REFERENCES projects(id),
@@ -80,6 +98,7 @@ def init_db():
 
     CREATE TABLE IF NOT EXISTS ballots (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id TEXT,
         project_id TEXT NOT NULL REFERENCES projects(id),
         voter_token TEXT NOT NULL,
         voter_ip TEXT,
@@ -116,6 +135,7 @@ def init_db():
 
     CREATE TABLE IF NOT EXISTS invitations (
         token TEXT PRIMARY KEY,
+        event_id TEXT,
         role TEXT NOT NULL,
         email TEXT,
         tracks TEXT,
@@ -127,11 +147,37 @@ def init_db():
     );
     """)
     conn.commit()
+
+    # Dynamic migrations for any existing columns
+    migrations = [
+        ("events", "slug", "TEXT"),
+        ("events", "organizer_id", "TEXT"),
+        ("events", "join_code", "TEXT"),
+        ("events", "banner_url", "TEXT"),
+        ("events", "prize_pool", "TEXT"),
+        ("tracks", "event_id", "TEXT"),
+        ("teams", "event_id", "TEXT"),
+        ("projects", "event_id", "TEXT"),
+        ("scores", "event_id", "TEXT"),
+        ("pairwise_votes", "event_id", "TEXT"),
+        ("ballots", "event_id", "TEXT"),
+        ("invitations", "event_id", "TEXT"),
+        ("users", "password", "TEXT DEFAULT 'password123'"),
+    ]
+    for table, col, col_def in migrations:
+        try:
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_def}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
+
     try:
-        cursor.execute("ALTER TABLE users ADD COLUMN password TEXT DEFAULT 'password123'")
+        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_events_slug ON events(slug);")
+        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_events_join_code ON events(join_code);")
         conn.commit()
     except sqlite3.OperationalError:
         pass
+
     conn.close()
 
 def log_audit(action: str, actor: str, target: str = None, details: str = None):
