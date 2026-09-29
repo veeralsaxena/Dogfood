@@ -3,83 +3,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Veritas — Deterministic Competitive Evaluation Engine{% endblock %}</title>
+  <title>{% block title %}Veritas — Deterministic Competitive Evaluation Platform{% endblock %}</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <style>
-    /* High-performance system font stack fallbacks */
+    /* System font fallbacks */
     @font-face {
       font-family: 'Playfair Display';
       font-style: normal;
       font-weight: 500;
       src: local('Playfair Display'), local('Georgia'), serif;
     }
+    .nav-event-select {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.35rem 0.65rem;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
-  <!-- Executive Role Switcher Bar -->
-  <div class="persona-bar">
-    <div class="persona-bar-content">
-      <div class="persona-label">
-        <span class="pulse-dot"></span>
-        <span style="font-family:var(--font-mono); font-size:0.72rem; letter-spacing:0.05em; text-transform:uppercase;">
-          Active Persona: <strong id="current-role-badge">Public Visitor</strong>
+  <!-- Primary Product Navbar (Role-Segregated) -->
+  <nav class="navbar" style="border-bottom: 1px solid var(--border); background: var(--bg-surface); padding: 0.75rem 2rem;">
+    <div style="display:flex; align-items:center; gap:1.5rem;">
+      <a href="/projects" class="brand-wrapper" style="text-decoration:none; display:flex; align-items:center; gap:0.6rem;">
+        <svg width="22" height="22" viewBox="0 0 34 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17.048 37L1.21 27.57V10.8L16.83 1.06L32.88 10.43V27.2L17.28 36.93" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M17.48 20.42V27.61L25.2 23.05V15.78L17.48 20.42Z" fill="currentColor"/>
+        </svg>
+        <span class="brand-title" style="font-weight:700; letter-spacing:0.05em; font-size:1.05rem;">
+          VERITAS <span class="serif-italic" style="text-transform:lowercase; font-size:0.95rem; color:var(--text-muted); font-weight:400;">// evaluation platform</span>
         </span>
-      </div>
-      <div class="persona-buttons">
-        <button onclick="switchRole('visitor')" class="persona-btn active" id="pbtn-visitor">Visitor</button>
-        <button onclick="switchRole('participant')" class="persona-btn" id="pbtn-participant">Participant</button>
-        <button onclick="switchRole('judge_a')" class="persona-btn" id="pbtn-judge_a">Judge A (Ada)</button>
-        <button onclick="switchRole('judge_b')" class="persona-btn" id="pbtn-judge_b">Judge B (Beta)</button>
-        <button onclick="switchRole('organizer')" class="persona-btn" id="pbtn-organizer">Organizer (Ops)</button>
-      </div>
+      </a>
+
+      <!-- Active Competition Selector -->
+      {% if active_event %}
+      <span class="badge badge-accent" style="font-size:0.7rem; padding:0.2rem 0.5rem;" title="Current Competition">
+        {{ active_event.name }}
+      </span>
+      {% endif %}
     </div>
-  </div>
 
-  <!-- Primary Navbar -->
-  <nav class="navbar">
-    <a href="/projects" class="brand-wrapper">
-      <svg width="24" height="24" viewBox="0 0 34 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M17.048 37L1.21 27.57V10.8L16.83 1.06L32.88 10.43V27.2L17.28 36.93" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        <path d="M17.48 20.42V27.61L25.2 23.05V15.78L17.48 20.42Z" fill="currentColor"/>
-      </svg>
-      <span class="brand-title">VERITAS <span class="serif-italic" style="text-transform:lowercase; font-size:1.05rem; color:var(--text-muted)">// evaluation engine</span></span>
-    </a>
-
-    <!-- Dynamic Role-Based Navigation -->
-    <ul class="nav-links">
+    <!-- Dynamic Role-Segregated Navigation Links -->
+    <ul class="nav-links" style="display:flex; list-style:none; gap:1.25rem; margin:0; padding:0;">
       {% if not user or user.role == 'visitor' %}
-        <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
+        <!-- VISITOR NAVIGATION -->
+        <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
+        <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase Gallery</a></li>
         <li><a href="/vote" class="nav-link {% if active_page == 'vote' %}active{% endif %}">Community Ballot</a></li>
-        <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Audit & Verify</a></li>
+        <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Verification & Audit</a></li>
         <li><a href="/docs" target="_blank" class="nav-link">API Docs</a></li>
+
       {% elif user.role == 'participant' %}
+        <!-- PARTICIPANT NAVIGATION -->
         <li><a href="/participant/dashboard" class="nav-link {% if active_page == 'participant_dash' %}active{% endif %}">My Dashboard</a></li>
-        <li><a href="/submit" class="nav-link {% if active_page == 'submit' %}active{% endif %}">Submission</a></li>
-        <li><a href="/team/join/inv_tm_01" class="nav-link {% if active_page == 'team' %}active{% endif %}">Team Roster</a></li>
+        <li><a href="/submit" class="nav-link {% if active_page == 'submit' %}active{% endif %}">Project Submission</a></li>
+        <li><a href="/participant/dashboard#team" class="nav-link {% if active_page == 'team' %}active{% endif %}">Team Roster</a></li>
+        <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
         <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
         <li><a href="/vote" class="nav-link {% if active_page == 'vote' %}active{% endif %}">Ballot</a></li>
+
       {% elif user.role == 'judge' %}
+        <!-- JUDGE NAVIGATION -->
         <li><a href="/judge" class="nav-link {% if active_page == 'judge' %}active{% endif %}">Evaluation Queue</a></li>
         <li><a href="/arena" class="nav-link {% if active_page == 'arena' %}active{% endif %}">Pairwise Arena</a></li>
+        <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
         <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
         <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Audit & Math</a></li>
+
       {% elif user.role in ('organizer', 'admin') %}
+        <!-- ORGANIZER / ADMIN NAVIGATION -->
         <li><a href="/war-room" class="nav-link {% if active_page == 'war_room' %}active{% endif %}">War Room</a></li>
-        <li><a href="/settings" class="nav-link {% if active_page == 'settings' %}active{% endif %}">Event Settings</a></li>
+        <li><a href="/organizer/competitions" class="nav-link {% if active_page == 'org_competitions' %}active{% endif %}">Manage Competitions</a></li>
+        <li><a href="/settings" class="nav-link {% if active_page == 'settings' %}active{% endif %}">Rubric & Criteria</a></li>
         <li><a href="/arena" class="nav-link {% if active_page == 'arena' %}active{% endif %}">Pairwise Arena</a></li>
-        <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
         <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Audit Logs</a></li>
       {% endif %}
     </ul>
 
-    <!-- Right Controls: Profile / Login & Theme Toggle -->
+    <!-- Right Controls: Profile / Login / Theme -->
     <div style="display:flex; align-items:center; gap:0.75rem;">
+      <button onclick="openJoinModal()" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem;" title="Join Competition with Code">
+        + Join with Code
+      </button>
+
       {% if user and user.role != 'visitor' %}
-        <a href="/profile" style="text-decoration:none; display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; font-family:var(--font-mono); color:var(--text-secondary); background:var(--bg-secondary); padding:0.35rem 0.75rem; border:1px solid var(--border); border-radius:4px;" title="Account Profile & Settings">
+        <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; font-family:var(--font-mono); color:var(--text-secondary); background:var(--bg-secondary); padding:0.35rem 0.75rem; border:1px solid var(--border); border-radius:4px;">
           <span>{{ user.name }}</span>
-          <span class="badge badge-accent" style="font-size:0.65rem; padding:0.15rem 0.4rem;">{{ user.role }}</span>
-        </a>
-        <a href="/logout" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.75rem;">
+          <span class="badge {% if user.role == 'organizer' %}badge-emerald{% elif user.role == 'judge' %}badge-purple{% else %}badge-accent{% endif %}" style="font-size:0.65rem; padding:0.15rem 0.4rem; text-transform:uppercase;">
+            {{ user.role }}
+          </span>
+        </div>
+        <a href="/logout" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem;">
           Sign Out
         </a>
       {% else %}
@@ -88,25 +106,101 @@
         </a>
       {% endif %}
 
-      <button onclick="toggleTheme()" class="btn btn-outline" style="padding:0.4rem 0.6rem; font-size:0.75rem;" title="Toggle Theme">
+      <button onclick="toggleTheme()" class="btn btn-outline" style="padding:0.35rem 0.55rem; font-size:0.75rem;" title="Toggle Dark/Light Mode">
         ◐
       </button>
     </div>
   </nav>
 
+  <!-- Join Competition Modal -->
+  <div id="join-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center;">
+    <div class="card" style="max-width:440px; width:90%; padding:2rem; background:var(--bg-surface); border:1px solid var(--border-light); position:relative;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+        <h3 style="font-family:var(--font-serif); font-size:1.4rem; margin:0;">Join Competition</h3>
+        <button onclick="closeJoinModal()" style="background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">&times;</button>
+      </div>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1.25rem;">
+        Enter the unique 6-8 character competition code provided on your invitation or badge.
+      </p>
+      <form onsubmit="handleJoinCodeSubmit(event)">
+        <div style="margin-bottom:1.25rem;">
+          <label style="display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">
+            Competition Code
+          </label>
+          <input type="text" id="modal-join-code-input" class="input" style="width:100%; text-transform:uppercase; font-family:var(--font-mono); font-size:1.1rem; letter-spacing:0.1em; text-align:center;" placeholder="e.g. RAPTOR-2026" required />
+        </div>
+        <button type="submit" id="modal-join-btn" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.65rem;">
+          Join Competition →
+        </button>
+      </form>
+      <div id="modal-join-error" style="display:none; margin-top:1rem; padding:0.6rem; background:rgba(239, 68, 68, 0.15); border:1px solid #ef4444; border-radius:4px; color:#fca5a5; font-size:0.8rem;"></div>
+    </div>
+  </div>
+
   <!-- Main Content -->
-  <main class="container">
+  <main class="container" style="min-height: calc(100vh - 180px); padding-top: 2rem; padding-bottom: 3rem;">
     {% block content %}{% endblock %}
   </main>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div>VERITAS PLATFORM // ENTERPRISE COMPETITIVE EVALUATION & AUDIT SUITE</div>
-    <div style="margin-top:0.35rem; color:var(--text-muted); font-size:0.75rem;">
-      DETERMINISTIC EVALUATION · CRYPTOGRAPHIC AUDITABILITY · HIGH-AVAILABILITY RELATIONAL STORAGE
+  <!-- Clean Enterprise Footer -->
+  <footer class="footer" style="border-top:1px solid var(--border); padding:2rem 0; margin-top:4rem; text-align:center; font-size:0.8rem; color:var(--text-muted); background:var(--bg-surface);">
+    <div style="max-width:1100px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; padding:0 2rem;">
+      <div style="font-family:var(--font-mono); font-size:0.75rem;">
+        VERITAS EVALUATION ENGINE // HIGH-INTEGRITY COMPETITIVE BENCHMARKING
+      </div>
+      <div style="display:flex; gap:1.5rem;">
+        <a href="/competitions" style="color:var(--text-muted); text-decoration:none;">Competitions</a>
+        <a href="/projects" style="color:var(--text-muted); text-decoration:none;">Showcase</a>
+        <a href="/audit" style="color:var(--text-muted); text-decoration:none;">Audit Verification</a>
+        <a href="/docs" target="_blank" style="color:var(--text-muted); text-decoration:none;">API Docs</a>
+        <a href="/login" style="color:var(--text-muted); text-decoration:none;">Switch Account</a>
+      </div>
     </div>
   </footer>
 
   <script src="/static/js/app.js"></script>
+  <script>
+    function openJoinModal() {
+      const m = document.getElementById('join-modal');
+      if (m) {
+        m.style.display = 'flex';
+        document.getElementById('modal-join-code-input').focus();
+      }
+    }
+    function closeJoinModal() {
+      const m = document.getElementById('join-modal');
+      if (m) m.style.display = 'none';
+    }
+    async function handleJoinCodeSubmit(e) {
+      e.preventDefault();
+      const code = document.getElementById('modal-join-code-input').value.trim();
+      const err = document.getElementById('modal-join-error');
+      const btn = document.getElementById('modal-join-btn');
+      err.style.display = 'none';
+      btn.disabled = true;
+      btn.innerText = 'Verifying...';
+
+      try {
+        const res = await fetch('/api/competitions/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ join_code: code })
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+          window.location.href = data.redirect_url || '/projects';
+        } else {
+          err.innerText = data.detail || 'Invalid competition join code.';
+          err.style.display = 'block';
+        }
+      } catch (ex) {
+        err.innerText = 'Network error: ' + ex.message;
+        err.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Join Competition →';
+      }
+    }
+  </script>
 </body>
 </html>

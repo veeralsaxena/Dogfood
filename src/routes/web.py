@@ -1,5 +1,7 @@
 import json
 import random
+from datetime import datetime, timezone
+from typing import Optional
 from fastapi import APIRouter, Request, Query, Response, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -14,17 +16,173 @@ from src.core.crypto import get_or_create_keys
 router = APIRouter(tags=["web_pages"])
 templates = Jinja2Templates(directory=str(BASE_DIR / "src" / "templates"))
 
+def get_active_event_context(request: Request, event_id_or_slug: str = None):
+    conn = get_db()
+    cursor = conn.cursor()
+    if event_id_or_slug:
+        cursor.execute("SELECT * FROM events WHERE id = ? OR slug = ?", (event_id_or_slug, event_id_or_slug))
+    else:
+        req_event = request.query_params.get("event") or request.cookies.get("active_event") or "evt_01"
+        cursor.execute("SELECT * FROM events WHERE id = ? OR slug = ?", (req_event, req_event))
+    row = cursor.fetchone()
+    if not row:
+        cursor.execute("SELECT * FROM events ORDER BY id ASC LIMIT 1")
+        row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def get_all_events():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT e.*,
+            (SELECT COUNT(*) FROM projects p WHERE p.event_id = e.id AND p.is_draft = 0) as project_count,
+            (SELECT COUNT(*) FROM tracks t WHERE t.event_id = e.id) as track_count
+        FROM events e
+        ORDER BY e.submissions_close DESC
+    """)
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
 @router.get("/", response_class=HTMLResponse)
 def index(request: Request):
-    return RedirectResponse(url="/projects")
+    user = get_current_user(request)
+    if user:
+        if user.role == "participant":
+            return RedirectResponse(url="/participant/dashboard")
+        elif user.role == "judge":
+            return RedirectResponse(url="/judge")
+        elif user.role in ("organizer", "admin"):
+            return RedirectResponse(url="/war-room")
+    return RedirectResponse(url="/competitions")
+
+@router.get("/competitions", response_class=HTMLResponse)
+def competitions_list_view(request: Request):
+    competitions = get_all_events()
+    user = get_current_user(request)
+    active_event = get_active_event_context(request)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="competitions_list.html",
+        context={
+            "active_page": "competitions",
+            "competitions": competitions,
+            "user": user,
+            "active_event": active_event
+        }
+    )
+
+@router.get("/c/{slug}", response_class=HTMLResponse)
+def competition_detail_view(request: Request, slug: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM events WHERE slug = ? OR id = ?", (slug, slug))
+    event_row = cursor.fetchone()
+    if not event_row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Competition not found")
+
+    event = dict(event_row)
+    weights = json.loads(event["weights"]) if event.get("weights") else {}
+
+    cursor.execute("SELECT id, name, description FROM tracks WHERE event_id = ?", (event["id"],))
+    tracks = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("""
+        SELECT p.*, t.name as track_name
+        FROM projects p
+        LEFT JOIN tracks t ON p.track_id = t.id
+        WHERE (p.event_id = ? OR p.event_id IS NULL) AND p.is_draft = 0
+        ORDER BY p.submitted_at ASC
+    """, (event["id"],))
+    projects = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    user = get_current_user(request)
+    return templates.TemplateResponse(
+        request=request,
+        name="competition_detail.html",
+        context={
+            "active_page": "competitions",
+            "event": event,
+            "tracks": tracks,
+            "weights": weights,
+            "projects": projects,
+            "user": user,
+            "active_event": event
+        }
+    )
+
+@router.get("/join/{join_code}", response_class=HTMLResponse)
+def join_view(request: Request, join_code: str):
+    code = join_code.strip().upper()
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM events WHERE UPPER(join_code) = ?", (code,))
+    event_row = cursor.fetchone()
+    conn.close()
+
+    if not event_row:
+        raise HTTPException(status_code=404, detail="Competition not found for this join code")
+
+    event = dict(event_row)
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url=f"/login?join_code={code}", status_code=303)
+
+    # Register user in event
+    conn = get_db()
+    cursor = conn.cursor()
+    now = datetime.now(timezone.utc).isoformat()
+    cursor.execute(
+        """INSERT INTO event_registrations (event_id, user_id, role, joined_at)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(event_id, user_id) DO NOTHING""",
+        (event["id"], user.id, user.role, now)
+    )
+    conn.commit()
+    conn.close()
+
+    if user.role == "judge":
+        return RedirectResponse(url=f"/judge?event={event['id']}", status_code=303)
+    else:
+        return RedirectResponse(url=f"/participant/dashboard?event={event['id']}", status_code=303)
+
+@router.get("/organizer/competitions", response_class=HTMLResponse)
+def organizer_competitions_view(request: Request):
+    user = get_current_user(request)
+    if not user or user.role not in ("organizer", "admin"):
+        return RedirectResponse(url="/login", status_code=303)
+
+    competitions = get_all_events()
+    active_event = get_active_event_context(request)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="organizer_competitions.html",
+        context={
+            "active_page": "org_competitions",
+            "competitions": competitions,
+            "user": user,
+            "active_event": active_event
+        }
+    )
 
 @router.get("/projects", response_class=HTMLResponse)
-def gallery_view(request: Request, track: str = Query(None), search: str = Query(None)):
+def gallery_view(request: Request, track: str = Query(None), search: str = Query(None), event: str = Query(None)):
     conn = get_db()
     cursor = conn.cursor()
 
     # Tracks
-    cursor.execute("SELECT id, name FROM tracks ORDER BY id ASC")
+    track_query = "SELECT id, name FROM tracks"
+    track_params = []
+    if event:
+        track_query += " WHERE event_id = ?"
+        track_params.append(event)
+    track_query += " ORDER BY id ASC"
+    cursor.execute(track_query, track_params)
     tracks = [dict(r) for r in cursor.fetchall()]
 
     # Projects
@@ -36,6 +194,9 @@ def gallery_view(request: Request, track: str = Query(None), search: str = Query
         WHERE p.is_draft = 0
     """
     params = []
+    if event:
+        query += " AND (p.event_id = ? OR p.event_id IS NULL)"
+        params.append(event)
     if track:
         query += " AND p.track_id = ?"
         params.append(track)
@@ -49,6 +210,9 @@ def gallery_view(request: Request, track: str = Query(None), search: str = Query
     conn.close()
 
     user = get_current_user(request)
+    active_event = get_active_event_context(request, event)
+    all_events = get_all_events()
+
     return templates.TemplateResponse(
         request=request,
         name="gallery.html",
@@ -57,20 +221,37 @@ def gallery_view(request: Request, track: str = Query(None), search: str = Query
             "projects": projects,
             "tracks": tracks,
             "selected_track": track,
+            "selected_event": event,
             "search_query": search,
-            "user": user
+            "user": user,
+            "active_event": active_event,
+            "all_events": all_events
         }
     )
 
 @router.get("/war-room", response_class=HTMLResponse)
-def war_room_view(request: Request):
+def war_room_view(request: Request, event: str = Query(None)):
+    user = get_current_user(request)
+    active_event = get_active_event_context(request, event)
+    all_events = get_all_events()
+
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id, team_id as team, track_id as track, title, repo_url FROM projects WHERE is_draft = 0")
+    proj_query = "SELECT id, team_id as team, track_id as track, title, repo_url FROM projects WHERE is_draft = 0"
+    proj_params = []
+    if event:
+        proj_query += " AND (event_id = ? OR event_id IS NULL)"
+        proj_params.append(event)
+    cursor.execute(proj_query, proj_params)
     projects = [dict(r) for r in cursor.fetchall()]
 
-    cursor.execute("SELECT judge_id, project_id, criteria, comment FROM scores")
+    score_query = "SELECT judge_id, project_id, criteria, comment FROM scores"
+    score_params = []
+    if event:
+        score_query += " WHERE (event_id = ? OR event_id IS NULL)"
+        score_params.append(event)
+    cursor.execute(score_query, score_params)
     raw_scores = []
     for r in cursor.fetchall():
         d = dict(r)
@@ -80,12 +261,19 @@ def war_room_view(request: Request):
     cursor.execute("SELECT id, name, tracks FROM users WHERE role = 'judge'")
     judges = [dict(r) for r in cursor.fetchall()]
 
-    cursor.execute("SELECT weights FROM events LIMIT 1")
-    event_row = cursor.fetchone()
-    weights = json.loads(event_row["weights"]) if event_row and event_row["weights"] else None
+    weights = json.loads(active_event["weights"]) if active_event and active_event.get("weights") else None
 
-    cursor.execute("SELECT id, name FROM tracks ORDER BY id ASC")
+    track_query = "SELECT id, name FROM tracks"
+    track_params = []
+    if active_event:
+        track_query += " WHERE event_id = ?"
+        track_params.append(active_event["id"])
+    track_query += " ORDER BY id ASC"
+    cursor.execute(track_query, track_params)
     tracks = [dict(r) for r in cursor.fetchall()]
+    if not tracks:
+        cursor.execute("SELECT id, name FROM tracks ORDER BY id ASC LIMIT 10")
+        tracks = [dict(r) for r in cursor.fetchall()]
 
     cursor.execute("SELECT * FROM invitations ORDER BY created_at DESC LIMIT 10")
     invitations = [dict(r) for r in cursor.fetchall()]
@@ -107,7 +295,6 @@ def war_room_view(request: Request):
         "total_scores": len(raw_scores)
     }
 
-    user = get_current_user(request)
     return templates.TemplateResponse(
         request=request,
         name="war_room.html",
@@ -120,16 +307,23 @@ def war_room_view(request: Request):
             "tracks": tracks,
             "invitations": invitations,
             "all_users": all_users,
-            "user": user
+            "user": user,
+            "active_event": active_event,
+            "all_events": all_events
         }
     )
 
 @router.get("/arena", response_class=HTMLResponse)
-def arena_view(request: Request):
+def arena_view(request: Request, event: str = Query(None)):
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id, title, summary, repo_url, track_id FROM projects WHERE is_draft = 0")
+    proj_query = "SELECT id, title, summary, repo_url, track_id FROM projects WHERE is_draft = 0"
+    proj_params = []
+    if event:
+        proj_query += " AND (event_id = ? OR event_id IS NULL)"
+        proj_params.append(event)
+    cursor.execute(proj_query, proj_params)
     projects = [dict(r) for r in cursor.fetchall()]
 
     cursor.execute("SELECT winner_id, loser_id FROM pairwise_votes")
@@ -156,6 +350,8 @@ def arena_view(request: Request):
         })
 
     user = get_current_user(request)
+    active_event = get_active_event_context(request, event)
+
     return templates.TemplateResponse(
         request=request,
         name="arena.html",
@@ -163,21 +359,28 @@ def arena_view(request: Request):
             "active_page": "arena",
             "pair": pair,
             "rankings": rankings,
-            "user": user
+            "user": user,
+            "active_event": active_event
         }
     )
 
 @router.get("/judge", response_class=HTMLResponse)
 @router.get("/judge/dashboard", response_class=HTMLResponse)
-def judge_portal_view(request: Request):
+def judge_portal_view(request: Request, event: str = Query(None)):
     user = get_current_user(request)
+    active_event = get_active_event_context(request, event)
+
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, title, summary, repo_url, track_id FROM projects WHERE is_draft = 0")
+    proj_query = "SELECT id, title, summary, repo_url, track_id FROM projects WHERE is_draft = 0"
+    proj_params = []
+    if event:
+        proj_query += " AND (event_id = ? OR event_id IS NULL)"
+        proj_params.append(event)
+    cursor.execute(proj_query, proj_params)
     projects = [dict(r) for r in cursor.fetchall()]
     conn.close()
 
-    # Prioritize projects matching judge's tracks if available
     if user and user.tracks:
         projects.sort(key=lambda p: 0 if p.get("track_id") in user.tracks else 1)
 
@@ -187,13 +390,15 @@ def judge_portal_view(request: Request):
         context={
             "active_page": "judge",
             "projects": projects,
-            "user": user
+            "user": user,
+            "active_event": active_event
         }
     )
 
 @router.get("/audit", response_class=HTMLResponse)
 def audit_view(request: Request):
     user = get_current_user(request)
+    active_event = get_active_event_context(request)
     _, pub_key = get_or_create_keys()
     pub_bytes = pub_key.public_bytes(
         encoding=__import__('cryptography.hazmat.primitives.serialization', fromlist=['Encoding']).Encoding.Raw,
@@ -206,32 +411,47 @@ def audit_view(request: Request):
         context={
             "active_page": "audit",
             "public_key": pub_bytes.hex(),
-            "user": user
+            "user": user,
+            "active_event": active_event
         }
     )
 
 @router.get("/submit", response_class=HTMLResponse)
-def submit_view(request: Request):
+def submit_view(request: Request, event: str = Query(None)):
+    active_event = get_active_event_context(request, event)
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM events LIMIT 1")
-    event = dict(cursor.fetchone() or {})
-    cursor.execute("SELECT id, name FROM tracks ORDER BY id ASC")
+    
+    track_query = "SELECT id, name FROM tracks"
+    track_params = []
+    if active_event:
+        track_query += " WHERE event_id = ?"
+        track_params.append(active_event["id"])
+    track_query += " ORDER BY id ASC"
+    cursor.execute(track_query, track_params)
     tracks = [dict(r) for r in cursor.fetchall()]
+    if not tracks:
+        cursor.execute("SELECT id, name FROM tracks ORDER BY id ASC")
+        tracks = [dict(r) for r in cursor.fetchall()]
+
     cursor.execute("SELECT id, name FROM teams ORDER BY id ASC")
     teams = [dict(r) for r in cursor.fetchall()]
     conn.close()
 
     user = get_current_user(request)
+    all_events = get_all_events()
+
     return templates.TemplateResponse(
         request=request,
         name="submit.html",
         context={
             "active_page": "submit",
-            "event": event,
+            "event": active_event,
             "tracks": tracks,
             "teams": teams,
-            "user": user
+            "user": user,
+            "active_event": active_event,
+            "all_events": all_events
         }
     )
 
@@ -244,12 +464,12 @@ def team_join_view(request: Request, invite_code: str):
     conn.close()
 
     if not row:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Team invitation not found or expired")
 
     team = dict(row)
     members = json.loads(team.get("members", "[]"))
     user = get_current_user(request)
+    active_event = get_active_event_context(request)
 
     return templates.TemplateResponse(
         request=request,
@@ -258,29 +478,29 @@ def team_join_view(request: Request, invite_code: str):
             "active_page": "team",
             "team": team,
             "members": members,
-            "user": user
+            "user": user,
+            "active_event": active_event
         }
     )
 
 @router.get("/settings", response_class=HTMLResponse)
 @router.get("/event-settings", response_class=HTMLResponse)
-def event_settings_view(request: Request):
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM events LIMIT 1")
-    event = dict(cursor.fetchone() or {})
-    weights = json.loads(event.get("weights", "{}")) if event.get("weights") else {}
-    conn.close()
-
+def event_settings_view(request: Request, event: str = Query(None)):
+    active_event = get_active_event_context(request, event)
+    weights = json.loads(active_event.get("weights", "{}")) if active_event and active_event.get("weights") else {}
     user = get_current_user(request)
+    all_events = get_all_events()
+
     return templates.TemplateResponse(
         request=request,
         name="event_settings.html",
         context={
             "active_page": "settings",
-            "event": event,
+            "event": active_event,
             "weights": weights,
-            "user": user
+            "user": user,
+            "active_event": active_event,
+            "all_events": all_events
         }
     )
 
@@ -301,7 +521,6 @@ def certificate_view(project_id: str):
     conn.close()
 
     if not row:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Project not found")
 
     svg_content = generate_svg_certificate(
@@ -327,24 +546,30 @@ def embed_gallery_view(request: Request):
     )
 
 @router.get("/vote", response_class=HTMLResponse)
-def community_voting_view(request: Request):
+def community_voting_view(request: Request, event: str = Query(None)):
+    active_event = get_active_event_context(request, event)
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, title, summary, track_id, repo_url FROM projects WHERE is_draft = 0")
+    proj_query = "SELECT id, title, summary, track_id, repo_url FROM projects WHERE is_draft = 0"
+    proj_params = []
+    if event:
+        proj_query += " AND (event_id = ? OR event_id IS NULL)"
+        proj_params.append(event)
+    cursor.execute(proj_query, proj_params)
     projects = [dict(r) for r in cursor.fetchall()]
     conn.close()
 
-    # Tier 3 requirement: Fisher-Yates shuffle to counteract primacy/positional bias
     random.shuffle(projects)
-
     user = get_current_user(request)
+
     return templates.TemplateResponse(
         request=request,
         name="voting.html",
         context={
             "active_page": "vote",
             "projects": projects,
-            "user": user
+            "user": user,
+            "active_event": active_event
         }
     )
 
@@ -382,11 +607,14 @@ def auth_switch_role(payload: dict, response: Response):
 class LoginRequest(BaseModel):
     email: str
     password: str
+    join_code: Optional[str] = None
 
 @router.get("/login", response_class=HTMLResponse)
-def login_view(request: Request):
+def login_view(request: Request, join_code: str = Query(None)):
     user = get_current_user(request)
     if user:
+        if join_code:
+            return RedirectResponse(url=f"/join/{join_code}", status_code=303)
         if user.role == "participant":
             return RedirectResponse(url="/participant/dashboard", status_code=303)
         elif user.role == "judge":
@@ -396,12 +624,15 @@ def login_view(request: Request):
         else:
             return RedirectResponse(url="/projects", status_code=303)
 
+    active_event = get_active_event_context(request)
     return templates.TemplateResponse(
         request=request,
         name="login.html",
         context={
             "active_page": "login",
-            "user": None
+            "user": None,
+            "join_code": join_code,
+            "active_event": active_event
         }
     )
 
@@ -414,7 +645,9 @@ def auth_login(payload: LoginRequest, response: Response):
     principal, token = auth_result
     response.set_cookie(key="session", value=token, path="/", httponly=False)
 
-    if principal.role == "participant":
+    if payload.join_code:
+        redirect_url = f"/join/{payload.join_code}"
+    elif principal.role == "participant":
         redirect_url = "/participant/dashboard"
     elif principal.role == "judge":
         redirect_url = "/judge"
@@ -442,18 +675,17 @@ def logout_view():
     return response
 
 @router.get("/participant/dashboard", response_class=HTMLResponse)
-def participant_dashboard_view(request: Request):
+def participant_dashboard_view(request: Request, event: str = Query(None)):
     user = get_current_user(request)
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
+    active_event = get_active_event_context(request, event)
+
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM events LIMIT 1")
-    event_row = cursor.fetchone()
-    event = dict(event_row or {})
 
-    # Check teams
+    # User teams
     cursor.execute("SELECT * FROM teams")
     teams = [dict(r) for r in cursor.fetchall()]
     user_team = None
@@ -489,8 +721,18 @@ def participant_dashboard_view(request: Request):
         if tr_row:
             track = dict(tr_row)
 
-    cursor.execute("SELECT id, name FROM tracks ORDER BY id ASC")
+    track_query = "SELECT id, name FROM tracks"
+    track_params = []
+    if active_event:
+        track_query += " WHERE event_id = ?"
+        track_params.append(active_event["id"])
+    track_query += " ORDER BY id ASC"
+    cursor.execute(track_query, track_params)
     tracks = [dict(r) for r in cursor.fetchall()]
+    if not tracks:
+        cursor.execute("SELECT id, name FROM tracks ORDER BY id ASC LIMIT 8")
+        tracks = [dict(r) for r in cursor.fetchall()]
+
     conn.close()
 
     return templates.TemplateResponse(
@@ -499,7 +741,8 @@ def participant_dashboard_view(request: Request):
         context={
             "active_page": "participant_dash",
             "user": user,
-            "event": event,
+            "event": active_event,
+            "active_event": active_event,
             "team": user_team,
             "team_members": team_members,
             "project": project,
@@ -514,16 +757,20 @@ def onboard_view(request: Request, token: str):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM invitations WHERE token = ?", (token,))
     inv_row = cursor.fetchone()
-    cursor.execute("SELECT * FROM events LIMIT 1")
-    event_row = cursor.fetchone()
-    conn.close()
-
+    
     if not inv_row:
+        conn.close()
         raise HTTPException(status_code=404, detail="Invitation link not found or expired")
 
     inv = dict(inv_row)
     if inv.get("used_at"):
+        conn.close()
         raise HTTPException(status_code=400, detail="This invitation link has already been used.")
+
+    event_id = inv.get("event_id") or "evt_01"
+    cursor.execute("SELECT * FROM events WHERE id = ?", (event_id,))
+    event_row = cursor.fetchone()
+    conn.close()
 
     event = dict(event_row or {})
     tracks = json.loads(inv["tracks"]) if inv.get("tracks") else []
@@ -536,6 +783,7 @@ def onboard_view(request: Request, token: str):
             "invitation": inv,
             "tracks": tracks,
             "event": event,
+            "active_event": event,
             "user": get_current_user(request)
         }
     )
@@ -546,13 +794,13 @@ def profile_view(request: Request):
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
+    active_event = get_active_event_context(request)
     return templates.TemplateResponse(
         request=request,
         name="profile.html",
         context={
             "active_page": "profile",
-            "user": user
+            "user": user,
+            "active_event": active_event
         }
     )
-
-

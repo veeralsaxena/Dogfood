@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Competitions — Organizer Console{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 2.5rem; flex-wrap:wrap; gap:1.5rem;">
+  <div>
+    <div class="serif-italic" style="color:var(--text-muted); font-size:1.05rem; margin-bottom:0.25rem;">[ OPERATIONS CONSOLE ]</div>
+    <h1 style="font-size:2.5rem; margin-bottom:0.5rem; font-family:var(--font-serif);">Multi-Competition Hub</h1>
+    <p style="color:var(--text-muted); font-size:0.95rem; max-width:700px;">
+      Provision and control multiple hackathons and technical competitions. Configure tracks, enforce deadlines, generate QR onboarding badges, and supervise judging lifecycle states.
+    </p>
+  </div>
+
+  <div style="display:flex; gap:0.75rem; align-items:center;">
+    <a href="/war-room" class="btn btn-outline" style="padding:0.6rem 1.25rem;">
+      ← Return to War Room
+    </a>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 1.8fr 1.2fr; gap:2.5rem; align-items:start;">
+  <!-- Left Column: Competitions Table & Controls -->
+  <div>
+    <div class="card" style="padding:1.5rem; margin-bottom:2rem;">
+      <h3 style="font-family:var(--font-serif); font-size:1.35rem; margin-bottom:1.25rem;">Active & Configured Competitions</h3>
+      
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Competition Name</th>
+              <th>Status</th>
+              <th>Join Code</th>
+              <th>Submissions</th>
+              <th>Lifecycle Action</th>
+              <th>Badges</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in competitions %}
+            <tr>
+              <td>
+                <div style="font-weight:600; font-size:0.95rem;">
+                  <a href="/c/{{ c.slug }}" style="color:var(--text-primary); text-decoration:none;">{{ c.name }}</a>
+                </div>
+                <div style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono);">
+                  ID: {{ c.id }} · Slug: {{ c.slug }}
+                </div>
+              </td>
+              <td>
+                <span class="badge {% if c.status == 'active' %}badge-emerald{% elif c.status == 'frozen' %}badge-amber{% elif c.status == 'published' %}badge-purple{% else %}badge-outline{% endif %}" style="text-transform:uppercase; font-size:0.7rem; font-family:var(--font-mono);">
+                  {{ c.status }}
+                </span>
+              </td>
+              <td>
+                <span class="mono" style="font-weight:700; color:var(--accent);">{{ c.join_code }}</span>
+              </td>
+              <td class="mono" style="text-align:center;">
+                {{ c.project_count }}
+              </td>
+              <td>
+                <select onchange="updateEventStatus('{{ c.id }}', this.value)" class="input" style="font-size:0.75rem; padding:0.25rem 0.5rem; font-family:var(--font-mono);">
+                  <option value="active" {% if c.status == 'active' %}selected{% endif %}>Active</option>
+                  <option value="frozen" {% if c.status == 'frozen' %}selected{% endif %}>Frozen (Lock)</option>
+                  <option value="judging" {% if c.status == 'judging' %}selected{% endif %}>Judging</option>
+                  <option value="published" {% if c.status == 'published' %}selected{% endif %}>Published</option>
+                  <option value="archived" {% if c.status == 'archived' %}selected{% endif %}>Archived</option>
+                </select>
+              </td>
+              <td>
+                <button onclick="showCompetitionQR('{{ c.id }}', '{{ c.name }}', '{{ c.join_code }}')" class="btn btn-outline" style="padding:0.25rem 0.6rem; font-size:0.75rem;" title="View Offline QR Code">
+                  📱 QR
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Create New Competition Form -->
+  <div>
+    <div class="card" style="padding:1.75rem; border:1px solid var(--border-light);">
+      <h3 style="font-family:var(--font-serif); font-size:1.35rem; margin-bottom:0.5rem;">Provision New Competition</h3>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1.25rem;">
+        Launch a new event with custom tracks, weighted rubrics, and automated QR onboarding.
+      </p>
+
+      <form id="create-comp-form" onsubmit="handleCreateCompetition(event)">
+        <div style="margin-bottom:1rem;">
+          <label style="display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">
+            Competition Title
+          </label>
+          <input type="text" id="comp-name" required class="input" style="width:100%;" placeholder="e.g. NextGen Web3 & AI Hackathon" />
+        </div>
+
+        <div style="margin-bottom:1rem;">
+          <label style="display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">
+            URL Slug (Optional)
+          </label>
+          <input type="text" id="comp-slug" class="input" style="width:100%; font-family:var(--font-mono); font-size:0.85rem;" placeholder="e.g. nextgen-web3-2026" />
+        </div>
+
+        <div style="margin-bottom:1rem;">
+          <label style="display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">
+            Description
+          </label>
+          <textarea id="comp-desc" required class="input" style="width:100%; height:75px; resize:vertical;" placeholder="Key challenge objectives, technical domains, and eligibility criteria..."></textarea>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
+          <div>
+            <label style="display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">
+              Submissions Deadline
+            </label>
+            <input type="datetime-local" id="comp-deadline" required class="input" style="width:100%; font-size:0.8rem;" />
+          </div>
+
+          <div>
+            <label style="display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">
+              Prize Pool (USD)
+            </label>
+            <input type="text" id="comp-prize" class="input" style="width:100%;" placeholder="e.g. $50,000 USD" />
+          </div>
+        </div>
+
+        <div style="margin-bottom:1.25rem;">
+          <label style="display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">
+            Category Tracks (Comma-separated)
+          </label>
+          <input type="text" id="comp-tracks" class="input" style="width:100%; font-size:0.85rem;" placeholder="Autonomous Agents, Zero-Knowledge Crypto, Developer Tools" />
+        </div>
+
+        <button type="submit" id="create-comp-btn" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.7rem;">
+          Provision Competition & QR Codes →
+        </button>
+
+        <div id="create-comp-msg" style="display:none; margin-top:1rem; padding:0.75rem; border-radius:4px; font-size:0.85rem;"></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- QR Code Display Modal -->
+<div id="qr-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center;">
+  <div class="card" style="max-width:380px; width:90%; padding:2rem; background:var(--bg-surface); border:1px solid var(--border-light); text-align:center;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <h3 id="qr-modal-title" style="font-family:var(--font-serif); font-size:1.25rem; margin:0;">Join Competition</h3>
+      <button onclick="closeQRModal()" style="background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">&times;</button>
+    </div>
+    
+    <div id="qr-code-container" style="background:#ffffff; padding:1.25rem; border-radius:8px; margin-bottom:1rem; display:flex; justify-content:center; align-items:center; min-height:220px;">
+    </div>
+
+    <div style="font-family:var(--font-mono); font-size:0.85rem; margin-bottom:1rem;">
+      Join Code: <strong id="qr-modal-code" style="color:var(--accent);"></strong>
+    </div>
+
+    <div style="display:flex; gap:0.5rem; justify-content:center;">
+      <button onclick="copyJoinLink()" class="btn btn-primary" style="font-size:0.8rem; padding:0.4rem 0.85rem;">
+        Copy Join Link
+      </button>
+      <button onclick="closeQRModal()" class="btn btn-outline" style="font-size:0.8rem; padding:0.4rem 0.85rem;">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentQRUrl = '';
+
+async function showCompetitionQR(eventId, name, code) {
+  document.getElementById('qr-modal-title').innerText = name;
+  document.getElementById('qr-modal-code').innerText = code;
+  const container = document.getElementById('qr-code-container');
+  container.innerHTML = '<span style="color:#000; font-size:0.85rem;">Generating Vector QR...</span>';
+  
+  currentQRUrl = window.location.origin + '/join/' + code;
+  document.getElementById('qr-modal').style.display = 'flex';
+
+  try {
+    const res = await fetch(`/api/competitions/${eventId}/qr`);
+    if (res.ok) {
+      const svg = await res.text();
+      container.innerHTML = svg;
+    } else {
+      container.innerHTML = '<span style="color:#000;">Could not generate QR code</span>';
+    }
+  } catch (e) {
+    container.innerHTML = '<span style="color:#000;">Error: ' + e.message + '</span>';
+  }
+}
+
+function closeQRModal() {
+  document.getElementById('qr-modal').style.display = 'none';
+}
+
+function copyJoinLink() {
+  navigator.clipboard.writeText(currentQRUrl);
+  alert('Join Link copied to clipboard:\n' + currentQRUrl);
+}
+
+async function updateEventStatus(eventId, newStatus) {
+  try {
+    const res = await fetch(`/api/competitions/${eventId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token organizer0000000000000000000000000000000'
+      },
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (res.ok) {
+      alert(`Lifecycle state updated to: ${newStatus}`);
+      window.location.reload();
+    } else {
+      const data = await res.json();
+      alert(data.detail || 'Failed to update status');
+    }
+  } catch (e) {
+    alert('Error updating status: ' + e.message);
+  }
+}
+
+async function handleCreateCompetition(e) {
+  e.preventDefault();
+  const btn = document.getElementById('create-comp-btn');
+  const msg = document.getElementById('create-comp-msg');
+  msg.style.display = 'none';
+  btn.disabled = true;
+  btn.innerText = 'Provisioning...';
+
+  const name = document.getElementById('comp-name').value.trim();
+  const slug = document.getElementById('comp-slug').value.trim();
+  const desc = document.getElementById('comp-desc').value.trim();
+  const deadline = document.getElementById('comp-deadline').value;
+  const prize = document.getElementById('comp-prize').value.trim();
+  const tracksRaw = document.getElementById('comp-tracks').value.trim();
+  const tracks = tracksRaw ? tracksRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+  const isoDeadline = new Date(deadline).toISOString();
+
+  try {
+    const res = await fetch('/api/competitions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token organizer0000000000000000000000000000000'
+      },
+      body: JSON.stringify({
+        name: name,
+        slug: slug || null,
+        description: desc,
+        submissions_close: isoDeadline,
+        prize_pool: prize || null,
+        tracks: tracks
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.status === 'success') {
+      msg.style.display = 'block';
+      msg.style.background = 'rgba(16, 185, 129, 0.15)';
+      msg.style.border = '1px solid #10b981';
+      msg.style.color = '#6ee7b7';
+      msg.innerHTML = `✓ ${data.message} Join Code: <strong>${data.join_code}</strong>`;
+      setTimeout(() => window.location.reload(), 1500);
+    } else {
+      msg.style.display = 'block';
+      msg.style.background = 'rgba(239, 68, 68, 0.15)';
+      msg.style.border = '1px solid #ef4444';
+      msg.style.color = '#fca5a5';
+      msg.innerText = data.detail || 'Failed to create competition.';
+    }
+  } catch (err) {
+    msg.style.display = 'block';
+    msg.style.background = 'rgba(239, 68, 68, 0.15)';
+    msg.style.border = '1px solid #ef4444';
+    msg.style.color = '#fca5a5';
+    msg.innerText = 'Network error: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.innerText = 'Provision Competition & QR Codes →';
+  }
+}
+</script>
+{% endblock %}
