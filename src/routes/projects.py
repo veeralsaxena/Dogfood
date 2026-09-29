@@ -324,19 +324,31 @@ def update_event_settings(settings: dict, user: UserPrincipal = Depends(require_
     weights_json = json.dumps(weights) if weights else None
     webhook_url = settings.get("webhook_url")
 
-    if name:
-        cursor.execute("UPDATE events SET name = ?", (name,))
-    if close_ts:
-        cursor.execute("UPDATE events SET submissions_close = ?", (close_ts,))
-    if weights_json:
-        cursor.execute("UPDATE events SET weights = ?", (weights_json,))
-    if webhook_url is not None:
-        cursor.execute("UPDATE events SET webhook_url = ?", (webhook_url.strip(),))
+    event_id = settings.get("event_id")
+
+    if event_id:
+        if name:
+            cursor.execute("UPDATE events SET name = ? WHERE id = ?", (name, event_id))
+        if close_ts:
+            cursor.execute("UPDATE events SET submissions_close = ? WHERE id = ?", (close_ts, event_id))
+        if weights_json:
+            cursor.execute("UPDATE events SET weights = ? WHERE id = ?", (weights_json, event_id))
+        if webhook_url is not None:
+            cursor.execute("UPDATE events SET webhook_url = ? WHERE id = ?", (webhook_url.strip(), event_id))
+    else:
+        if name:
+            cursor.execute("UPDATE events SET name = ?", (name,))
+        if close_ts:
+            cursor.execute("UPDATE events SET submissions_close = ?", (close_ts,))
+        if weights_json:
+            cursor.execute("UPDATE events SET weights = ?", (weights_json,))
+        if webhook_url is not None:
+            cursor.execute("UPDATE events SET webhook_url = ?", (webhook_url.strip(),))
 
     conn.commit()
     conn.close()
 
-    log_audit("EVENT_SETTINGS_UPDATED", user.email, "evt_01", f"Updated settings: {settings}")
+    log_audit("EVENT_SETTINGS_UPDATED", user.email, event_id or "evt_01", f"Updated settings: {settings}")
     return {"status": "updated", "settings": settings}
 
 @event_router.post("/webhook/test")

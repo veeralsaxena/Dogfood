@@ -112,7 +112,41 @@ sequenceDiagram
 
 ---
 
-## 5. Performance & Resource Footprint
+---
+
+## 5. Event Pipeline Architecture (FIG. 01 — 10 Stages)
+
+Veritas maps each of the 10 formal event pipeline stages directly to modular services and immutable database constraints:
+
+```mermaid
+flowchart LR
+    S1["01 Registration"] --> S2["02 Teams"]
+    S2 --> S3["03 Submissions"]
+    S3 --> S4["04 Eligibility"]
+    S4 --> S5["05 Assignment"]
+    S5 --> S6["06 Scoring"]
+    S6 --> S7["07 Normalization\n(Defended Engine)"]
+    S7 --> S8["08 Results"]
+    S8 --> S9["09 Certificates"]
+    S9 --> S10["10 Archive"]
+
+    style S7 fill:#2A0F1E,stroke:#FF3D6E,stroke-width:2px,color:#FFFFFF
+```
+
+1. **Stage 01 (Registration):** Magic onboarding tokens (`src/routes/auth_admin.py`) and role-segregated sessions (`src/core/auth.py`).
+2. **Stage 02 (Teams):** Self-service team formation with shareable invite codes (`src/routes/projects.py`), 1-to-4 member roster enforcement.
+3. **Stage 03 (Submissions):** Draft and published lifecycle with rich metadata (`projects` table, `src/routes/projects.py`).
+4. **Stage 04 (Eligibility):** Hard UTC timestamp deadline gatekeeper refusing submissions once expired. Duplicate deduplication via `(team, repo_url)`.
+5. **Stage 05 (Assignment):** Disjoint track-based review batching. Strict query-level role isolation ensuring no judge can access peer ballots.
+6. **Stage 06 (Scoring):** Dynamic organizer-configurable rubric (supports adding/removing arbitrary criteria topics) and head-to-head pairwise comparison (`/arena`).
+7. **Stage 07 (Normalization — Defended Failure Surface):** Alternating Least Squares Two-Way Fixed Effects with Empirical Bayes Shrinkage (`src/core/normalization.py`).
+8. **Stage 08 (Results):** Live War Room monitoring (`/war-room`), rank generation, and sealed ballots during active voting windows.
+9. **Stage 09 (Certificates):** Dynamic vector SVG award certificates (`src/core/certificates.py`) embedding offline vector QR verification codes (`src/core/qrcode.py`).
+10. **Stage 10 (Archive):** Canonical JSON snapshot signed with Ed25519 (`src/core/crypto.py`), standalone verification script (`verify.py`), CSV export, and bulk import/export.
+
+---
+
+## 6. Performance & Resource Footprint
 
 - **Container Image Size:** ~160 MB (Python 3.11-slim)
 - **Idle Memory:** ~42 MB RAM

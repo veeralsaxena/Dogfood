@@ -544,6 +544,15 @@ def judge_portal_view(request: Request, event: str = Query(None)):
                 "comment": comment
             }
 
+    if not weights:
+        if active_event and active_event.get("weights"):
+            try:
+                weights = json.loads(active_event["weights"]) if isinstance(active_event["weights"], str) else active_event["weights"]
+            except Exception:
+                weights = None
+        if not weights:
+            weights = {"functionality": 0.4, "quality": 0.3, "innovation": 0.2, "design": 0.1}
+
     for p in projects:
         p["evaluation"] = user_evaluations.get(p["id"])
 
@@ -556,7 +565,8 @@ def judge_portal_view(request: Request, event: str = Query(None)):
             "active_page": "judge",
             "projects": projects,
             "user": user,
-            "active_event": active_event
+            "active_event": active_event,
+            "rubric_weights": weights
         }
     )
 

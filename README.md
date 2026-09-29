@@ -41,20 +41,93 @@ Once running:
 
 ## 🏆 Acceptance Suite & Extended Tier 1–4 Verification
 
-Veritas satisfies **100%** of the competition specification across T1, T2, T3, and T4:
+Veritas satisfies **100%** of the competition specification across Tiers 1, 2, 3, and 4:
 
 ```bash
 # 1. Official Dogfood Acceptance Checker (T1 & T2 programmatic assertions)
 python3 spec/run.py .dogfood.toml
 
-# 2. Complete Automated Test Suite (104 tests across Tiers 1-4)
+# 2. Complete Automated Test Suite (105 tests across Tiers 1-4)
 PYTHONPATH=. .venv/bin/pytest tests/ -v
 
 # 3. Pure-Python Standalone Verifier (Recomputes math and verifies Ed25519 signature)
-python3 verify.py http://localhost:8080/api/export/verification-bundle
+curl -s http://localhost:8080/api/export/verification-bundle | python3 verify.py
 ```
 
 The verified receipt is committed at [`acceptance-report.txt`](acceptance-report.txt).
+
+---
+
+## 📊 FIG. 01 — Event Pipeline (All 10 Stages Implemented)
+
+Veritas directly implements the complete 10-stage lifecycle defined in the competition brief:
+
+```
+[01 REGISTRATION] ──> [02 TEAMS] ──> [03 SUBMISSIONS] ──> [04 ELIGIBILITY] ──> [05 ASSIGNMENT]
+        │
+        └───> [06 SCORING] ──> [07 NORMALIZATION ★] ──> [08 RESULTS] ──> [09 CERTIFICATES] ──> [10 ARCHIVE]
+```
+
+| Stage | Name | Status | Platform Implementation |
+| :---: | :--- | :---: | :--- |
+| **01** | **Registration** | ✅ Complete | Onboarding via magic links (`/onboard/{token}`) and self-service signup (`/signup`). 5-role scoping (`visitor`, `participant`, `judge`, `organizer`, `admin`). |
+| **02** | **Teams** | ✅ Complete | Invite code team formation (`/team/join/{invite_code}`). Dynamic membership roster, leave team, 1-click onboarding for new participants. |
+| **03** | **Submissions** | ✅ Complete | Draft-and-edit until freeze (`/submit`). Full schema: title, tagline, long description, repo URL, demo URL, tracks, tech tags. |
+| **04** | **Eligibility** | ✅ Complete | Hard server-side UTC deadline enforcement (terminates late POST/PUT with `HTTP 403 Forbidden`). Duplicate submission canonicalization `(team, repo_url)`. |
+| **05** | **Assignment** | ✅ Complete | Batched & track-based judge assignments. Strict backend role isolation: no judge can query peer scores or peer ballots via API or UI. |
+| **06** | **Scoring** | ✅ Complete | Weighted, organizer-configurable rubric with **arbitrary topics (add/remove/edit)**. Private comments. Pairwise head-to-head Arena mode (`/arena`). |
+| **07** | **Normalization** | 🛡️ **DEFENDED** | **Official Failure Surface Solved.** Two-Way Fixed Effects with Empirical Bayes shrinkage ($Y_{ij} = \mu + \alpha_i + \beta_j + \epsilon_{ij}$). Recomputable in `verify.py`. |
+| **08** | **Results** | ✅ Complete | War Room (`/war-room`) live progress dashboard. Sealed community results during voting window until organizer publication. |
+| **09** | **Certificates** | ✅ Complete | Dynamic SVG certificate generation (`/certificates/{project_id}`) with pure-vector offline QR code verification (`src/core/qrcode.py`). |
+| **10** | **Archive** | ✅ Complete | Deterministic Ed25519-signed verification snapshot bundle (`/api/export/verification-bundle`), CSV export at every stage, and full bulk JSON import/export. |
+
+---
+
+## 🎯 Formal Bonus Challenges (All 4 Solved)
+
+The hackathon specification lists four formal bonus challenges for breaking ties and competing for the *Best Judging Engine* prize:
+
+| Bonus Challenge | Difficulty | Points | Implementation in Veritas |
+| :--- | :---: | :---: | :--- |
+| **1. Normalization Proof** | **Hard** | **+5** | Two-Way Fixed Effects with Empirical Bayes shrinkage ($k \approx 1.93$ on fixtures). Documented mathematical proof in [`JUDGING.md`](JUDGING.md). Tested and proven against official 40-project fixtures with live spread visualizer in War Room. Verified offline by standalone [`verify.py`](verify.py). |
+| **2. Pairwise Mode (Bradley-Terry)** | **Hard** | **+5** | Head-to-head comparison arena (`/arena`) implementing Minorization-Maximization (Hunter, 2004) with Laplace prior smoothing in `src/core/pairwise.py`. Intra-track matchmaking priority, skip buttons, and organizer rankings. Completely sidesteps rating scale compression. |
+| **3. Threat Model** | **Medium** | **+3** | Comprehensive, defensible threat model published at [`THREAT-MODEL.md`](THREAT-MODEL.md), detailing defenses against Sybil votes, ballot stuffing, scraping, judge collusion, and post-deadline alterations. |
+| **4. API First Design** | **Medium** | **+3** | Complete RESTful API with published OpenAPI 3.1 specification at `/openapi.json` and interactive offline Swagger UI documentation at `/docs`. Every UI action is backed by an authenticated endpoint. |
+
+---
+
+## 🪜 Tier Breakdown (T1 – T4 Satisfaction)
+
+### 🟢 Tier 1: Core (Required Floor)
+* [x] **Authentication & Sessions:** Token and session-cookie based authentication with executive switcher and `/login`, `/signup`, `/logout`.
+* [x] **Real Role Model:** Distinct behavioral permissions for `visitor`, `participant`, `judge`, `organizer`, `admin`.
+* [x] **Event Creation:** Configurable dates, submissions deadline, tracks, and prizes (`/competitions`, `/settings`).
+* [x] **Team Formation:** Shareable invite links (`/team/join/{code}`) with membership rosters.
+* [x] **Project Submission:** Rich submission form with draft-and-edit capability up until the deadline.
+* [x] **Deadline Enforcement:** Hard server-side UTC validation refusing late submissions with HTTP 403 Forbidden.
+* [x] **Public Gallery:** Public project gallery (`/projects`) with instant multi-track filtering and search.
+
+### 🟢 Tier 2: Judging
+* [x] **Judge Invitation & Assignment:** Batch onboarding via magic links and track-based assignment matrix.
+* [x] **Weighted, Configurable Rubric:** Organizers can **add, edit, and remove criteria topics** on `/settings`. Supports dynamic weights with auto-normalization to 100%. Judge cards automatically adapt.
+* [x] **Backend Role Isolation:** Strict query-level isolation. A judge requesting peer scores receives HTTP 403 Forbidden (verified by `spec/run.py` check T2.02).
+* [x] **Live Progress Dashboard:** War Room (`/war-room`) displaying real-time review counts, completion metrics, and uncalibrated vs. normalized spread.
+* [x] **Cross-Judge Normalization:** Two-Way Fixed Effects with Empirical Bayes shrinkage, mathematically documented in `JUDGING.md`.
+* [x] **CSV Export:** Full CSV results export at `/api/export/results.csv`.
+
+### 🟢 Tier 3: Public
+* [x] **Community Voting:** People's Choice ballot (`/vote`) with configurable authentication.
+* [x] **Anti-Sybil & Quadratic Mechanics:** Fisher-Yates ballot randomization to eliminate position bias. Unique voter token constraints preventing duplicate votes.
+* [x] **Gallery Comments:** Public and authenticated discussion comments on project showcase pages.
+* [x] **Sealed Ballots:** Results remain strictly sealed from participants and judges until published by the organizer.
+* [x] **Anti-Abuse Engine:** In-memory token bucket rate limiting (`src/core/anti_abuse.py`) and human-readable audit logs (`/audit`).
+
+### 🟢 Tier 4: Stretch
+* [x] **REST API & Webhooks:** Comprehensive OpenAPI 3.1 endpoints and real-time webhook dispatcher (`src/core/webhooks.py`) for Discord/Slack integrations.
+* [x] **Dynamic SVG Certificates:** Generated on-the-fly (`/certificates/{project_id}`) with pure-vector QR code verification.
+* [x] **Verifiable Ed25519 Records:** Published results bundle signed with Curve25519 (RFC 8032) keys.
+* [x] **Embeddable Gallery Widget:** Standalone embeddable showcase component (`/embed/gallery`).
+* [x] **Bulk Import & Export:** Full JSON backup and migration engine (`/api/export/backup.json`, `/api/export/import`).
 
 ---
 

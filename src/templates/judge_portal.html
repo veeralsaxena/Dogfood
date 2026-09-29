@@ -44,62 +44,22 @@
 
           <!-- Scoring Form -->
           <form onsubmit="handleScoreSubmit(event, '{{ p.id }}')" style="border-top:1px solid var(--border); padding-top:1.25rem;">
-            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:1rem; margin-bottom:1rem;">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap:1rem; margin-bottom:1rem;">
+              {% for c_name, c_weight in rubric_weights.items() %}
               <div>
                 <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
-                  FUNCTIONALITY (40%)
+                  {{ c_name|upper|replace('_', ' ') }} ({{ (c_weight * 100)|round|int }}%)
                 </label>
-                {% set cur_func = p.evaluation.criteria.get('functionality', 4)|int if (p.evaluation and p.evaluation.criteria and 'functionality' in p.evaluation.criteria) else 4 %}
-                <select id="crit-func-{{ p.id }}" class="search-input" style="width:100%;">
-                  <option value="5" {% if cur_func == 5 %}selected{% endif %}>5 — Exceptional</option>
-                  <option value="4" {% if cur_func == 4 %}selected{% endif %}>4 — Strong</option>
-                  <option value="3" {% if cur_func == 3 %}selected{% endif %}>3 — Adequate</option>
-                  <option value="2" {% if cur_func == 2 %}selected{% endif %}>2 — Incomplete</option>
-                  <option value="1" {% if cur_func == 1 %}selected{% endif %}>1 — Deficient</option>
+                {% set cur_val = p.evaluation.criteria.get(c_name, 4)|int if (p.evaluation and p.evaluation.criteria and c_name in p.evaluation.criteria) else 4 %}
+                <select class="search-input crit-input-{{ p.id }}" data-crit="{{ c_name }}" data-weight="{{ c_weight }}" style="width:100%;">
+                  <option value="5" {% if cur_val == 5 %}selected{% endif %}>5 — Exceptional / Production</option>
+                  <option value="4" {% if cur_val == 4 %}selected{% endif %}>4 — Strong / Clean</option>
+                  <option value="3" {% if cur_val == 3 %}selected{% endif %}>3 — Adequate / Readable</option>
+                  <option value="2" {% if cur_val == 2 %}selected{% endif %}>2 — Incomplete / Fragile</option>
+                  <option value="1" {% if cur_val == 1 %}selected{% endif %}>1 — Deficient / Broken</option>
                 </select>
               </div>
-
-              <div>
-                <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
-                  CODE QUALITY (30%)
-                </label>
-                {% set cur_qual = p.evaluation.criteria.get('quality', 4)|int if (p.evaluation and p.evaluation.criteria and 'quality' in p.evaluation.criteria) else 4 %}
-                <select id="crit-qual-{{ p.id }}" class="search-input" style="width:100%;">
-                  <option value="5" {% if cur_qual == 5 %}selected{% endif %}>5 — Production</option>
-                  <option value="4" {% if cur_qual == 4 %}selected{% endif %}>4 — Clean</option>
-                  <option value="3" {% if cur_qual == 3 %}selected{% endif %}>3 — Readable</option>
-                  <option value="2" {% if cur_qual == 2 %}selected{% endif %}>2 — Fragile</option>
-                  <option value="1" {% if cur_qual == 1 %}selected{% endif %}>1 — Unmaintainable</option>
-                </select>
-              </div>
-
-              <div>
-                <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
-                  INNOVATION (20%)
-                </label>
-                {% set cur_innov = p.evaluation.criteria.get('innovation', 3)|int if (p.evaluation and p.evaluation.criteria and 'innovation' in p.evaluation.criteria) else 3 %}
-                <select id="crit-innov-{{ p.id }}" class="search-input" style="width:100%;">
-                  <option value="5" {% if cur_innov == 5 %}selected{% endif %}>5 — Novel Paradigm</option>
-                  <option value="4" {% if cur_innov == 4 %}selected{% endif %}>4 — Creative</option>
-                  <option value="3" {% if cur_innov == 3 %}selected{% endif %}>3 — Standard</option>
-                  <option value="2" {% if cur_innov == 2 %}selected{% endif %}>2 — Derivative</option>
-                  <option value="1" {% if cur_innov == 1 %}selected{% endif %}>1 — Trivial</option>
-                </select>
-              </div>
-
-              <div>
-                <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
-                  DESIGN / UX (10%)
-                </label>
-                {% set cur_des = p.evaluation.criteria.get('design', 4)|int if (p.evaluation and p.evaluation.criteria and 'design' in p.evaluation.criteria) else 4 %}
-                <select id="crit-des-{{ p.id }}" class="search-input" style="width:100%;">
-                  <option value="5" {% if cur_des == 5 %}selected{% endif %}>5 — Refined</option>
-                  <option value="4" {% if cur_des == 4 %}selected{% endif %}>4 — Intuitive</option>
-                  <option value="3" {% if cur_des == 3 %}selected{% endif %}>3 — Usable</option>
-                  <option value="2" {% if cur_des == 2 %}selected{% endif %}>2 — Rough</option>
-                  <option value="1" {% if cur_des == 1 %}selected{% endif %}>1 — Broken</option>
-                </select>
-              </div>
+              {% endfor %}
             </div>
 
             <div style="margin-bottom:1rem;">
@@ -123,11 +83,15 @@
 
 <script>
 function updateWeightedScore(projectId) {
-  const f = parseFloat(document.getElementById(`crit-func-${projectId}`).value) * 0.4;
-  const q = parseFloat(document.getElementById(`crit-qual-${projectId}`).value) * 0.3;
-  const i = parseFloat(document.getElementById(`crit-innov-${projectId}`).value) * 0.2;
-  const d = parseFloat(document.getElementById(`crit-des-${projectId}`).value) * 0.1;
-  const total = (f + q + i + d).toFixed(2);
+  let weightedSum = 0;
+  let totalWeight = 0;
+  document.querySelectorAll(`.crit-input-${projectId}`).forEach(el => {
+    const val = parseFloat(el.value) || 0;
+    const weight = parseFloat(el.getAttribute('data-weight')) || 1.0;
+    weightedSum += val * weight;
+    totalWeight += weight;
+  });
+  const total = (totalWeight > 0 ? (weightedSum / totalWeight) : 0).toFixed(2);
   const el = document.getElementById(`weighted-total-${projectId}`);
   if (el) el.innerText = total;
 }
@@ -135,9 +99,8 @@ function updateWeightedScore(projectId) {
 // Attach listeners
 document.addEventListener("DOMContentLoaded", () => {
   {% for p in projects %}
-    ['crit-func-{{ p.id }}', 'crit-qual-{{ p.id }}', 'crit-innov-{{ p.id }}', 'crit-des-{{ p.id }}'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.addEventListener('change', () => updateWeightedScore('{{ p.id }}'));
+    document.querySelectorAll('.crit-input-{{ p.id }}').forEach(el => {
+      el.addEventListener('change', () => updateWeightedScore('{{ p.id }}'));
     });
   {% endfor %}
 });
@@ -147,12 +110,11 @@ async function handleScoreSubmit(e, projectId) {
   const btn = document.getElementById(`btn-score-${projectId}`);
   btn.innerHTML = 'Saving...';
 
-  const criteria = {
-    functionality: parseInt(document.getElementById(`crit-func-${projectId}`).value),
-    quality: parseInt(document.getElementById(`crit-qual-${projectId}`).value),
-    innovation: parseInt(document.getElementById(`crit-innov-${projectId}`).value),
-    design: parseInt(document.getElementById(`crit-des-${projectId}`).value)
-  };
+  const criteria = {};
+  document.querySelectorAll(`.crit-input-${projectId}`).forEach(el => {
+    const cName = el.getAttribute('data-crit');
+    criteria[cName] = parseInt(el.value, 10);
+  });
   const comment = document.getElementById(`comment-${projectId}`).value;
 
   const headers = { 'Content-Type': 'application/json' };
