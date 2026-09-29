@@ -1,19 +1,29 @@
 import hashlib
 from datetime import datetime, timezone
 
-def generate_svg_certificate(project_id: str, title: str, team_name: str, rank: int = None, score: float = None) -> str:
+def generate_svg_certificate(
+    project_id: str,
+    title: str,
+    team_name: str,
+    rank: int = None,
+    score: float = None,
+    org_name: str = "HACKATHON RAPTORS",
+    sub_org: str = "FELLOWSHIP OF SENIOR ENGINEERS · COMMUNITY INTEREST CO.",
+    accent_color: str = "#f59e0b"
+) -> str:
     """Generates an editorial high-resolution SVG certificate with cryptographic verification hash."""
     now_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
-    cert_data = f"{project_id}:{title}:{team_name}:{rank}:{score}"
+    cert_data = f"{project_id}:{title}:{team_name}:{rank}:{score}:{org_name}"
     cert_hash = hashlib.sha256(cert_data.encode('utf-8')).hexdigest()[:16].upper()
 
     rank_text = f"AWARDED RANK #{rank}" if rank else "VERIFIED PARTICIPATION"
     sub_text = f"For exceptional engineering and presentation of {title}"
+    accent = accent_color or "#f59e0b"
 
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" width="1000" height="700">
   <defs>
     <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="0%" stop-color="{accent}" />
       <stop offset="100%" stop-color="#b45309" />
     </linearGradient>
     <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -36,8 +46,8 @@ def generate_svg_certificate(project_id: str, title: str, team_name: str, rank: 
   <path d="M 975 650 L 950 675 M 975 640 L 940 675" stroke="#f59e0b" stroke-width="1.5" />
 
   <!-- Organization Logo & Header -->
-  <text x="500" y="110" font-family="'Playfair Display', Georgia, serif" font-size="28" font-weight="600" fill="#f59e0b" text-anchor="middle" letter-spacing="4">HACKATHON RAPTORS</text>
-  <text x="500" y="140" font-family="'Inter', sans-serif" font-size="12" fill="#a1a1aa" text-anchor="middle" letter-spacing="3">FELLOWSHIP OF SENIOR ENGINEERS · COMMUNITY INTEREST CO.</text>
+  <text x="500" y="110" font-family="'Playfair Display', Georgia, serif" font-size="28" font-weight="600" fill="{accent}" text-anchor="middle" letter-spacing="4">{org_name}</text>
+  <text x="500" y="140" font-family="'Inter', sans-serif" font-size="12" fill="#a1a1aa" text-anchor="middle" letter-spacing="3">{sub_org}</text>
 
   <!-- Title of Certificate -->
   <text x="500" y="220" font-family="'Playfair Display', Georgia, serif" font-size="42" font-style="italic" fill="#fafafa" text-anchor="middle">Certificate of Excellence</text>

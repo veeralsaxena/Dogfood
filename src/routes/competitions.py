@@ -27,6 +27,17 @@ class CompetitionStatusUpdate(BaseModel):
 class JoinCompetitionRequest(BaseModel):
     join_code: str
 
+class BrandingUpdateRequest(BaseModel):
+    brand_name: str
+    org_name: str
+    tagline: Optional[str] = "evaluation platform"
+    accent_color: str
+    accent_hover: Optional[str] = None
+    theme_preset: Optional[str] = "custom"
+    crest_icon: Optional[str] = "veritas"
+    hero_title: Optional[str] = None
+    sub_org: Optional[str] = None
+
 def slugify(text: str) -> str:
     s = text.lower().strip()
     s = re.sub(r'[^\w\s-]', '', s)
@@ -187,6 +198,50 @@ def update_competition_status(
 
     log_audit("update_status", user.id, event_id_or_slug, f"Transitioned to {payload.status}")
     return {"status": "success", "new_status": payload.status}
+
+@router.post("/api/competitions/{event_id_or_slug}/branding")
+def update_competition_branding(
+    event_id_or_slug: str,
+    payload: BrandingUpdateRequest,
+    user: UserPrincipal = Depends(require_role(["organizer", "admin"]))
+):
+    """Updates the institutional white-label branding theme for a competition."""
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id, name FROM events WHERE id = ? OR slug = ?", (event_id_or_slug, event_id_or_slug))
+    ev = cursor.fetchone()
+    if not ev:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Competition not found")
+
+    brand_data = {
+        "brand_name": payload.brand_name.strip(),
+        "org_name": payload.org_name.strip(),
+        "sub_org": payload.sub_org or f"{payload.brand_name} · EXCELLENCE IN ENGINEERING",
+        "tagline": payload.tagline.strip() if payload.tagline else "evaluation platform",
+        "accent_color": payload.accent_color.strip(),
+        "accent_hover": payload.accent_hover.strip() if payload.accent_hover else payload.accent_color.strip(),
+        "theme_preset": payload.theme_preset or "custom",
+        "crest_icon": payload.crest_icon or "veritas",
+        "hero_title": payload.hero_title or f"{payload.brand_name} Competitive Evaluation Portal."
+    }
+
+    cursor.execute(
+        "UPDATE events SET branding = ? WHERE id = ?",
+        (json.dumps(brand_data), ev["id"])
+    )
+    conn.commit()
+    conn.close()
+
+    log_audit("update_branding", user.id, ev["id"], f"Updated branding theme to {payload.brand_name}")
+
+    return {
+        "status": "success",
+        "event_id": ev["id"],
+        "branding": brand_data,
+        "message": f"Institutional theme for '{ev['name']}' saved successfully."
+    }
 
 @router.post("/api/competitions/join")
 def join_competition(

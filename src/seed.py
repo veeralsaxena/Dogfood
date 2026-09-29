@@ -45,9 +45,20 @@ def seed_database():
         "innovation": 0.2,
         "design": 0.1
     })
+    veritas_brand = json.dumps({
+        "brand_name": "VERITAS",
+        "org_name": "HACKATHON RAPTORS",
+        "sub_org": "FELLOWSHIP OF SENIOR ENGINEERS · COMMUNITY INTEREST CO.",
+        "tagline": "evaluation platform",
+        "accent_color": "#f59e0b",
+        "accent_hover": "#d97706",
+        "crest_icon": "veritas",
+        "theme_preset": "amber",
+        "hero_title": "Software built for rigorous evaluation."
+    })
     cursor.execute(
-        """INSERT INTO events (id, name, slug, description, submissions_close, status, weights, organizer_id, join_code, prize_pool)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        """INSERT INTO events (id, name, slug, description, submissions_close, status, weights, organizer_id, join_code, prize_pool, branding)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             event_data.get("id", "evt_01"),
             event_data.get("name", "Sample Hack 2026"),
@@ -58,7 +69,8 @@ def seed_database():
             weights_json,
             "org_root",
             "SAMPLE-2026",
-            "$25,000 USD"
+            "$25,000 USD",
+            veritas_brand
         )
     )
 
@@ -69,9 +81,20 @@ def seed_database():
         "verifiability": 0.25,
         "user_experience": 0.15
     })
+    raptors_brand = json.dumps({
+        "brand_name": "HACKATHON RAPTORS",
+        "org_name": "Hackathon Raptors Fellowship",
+        "sub_org": "FELLOWSHIP OF SENIOR ENGINEERS · COMMUNITY INTEREST CO.",
+        "tagline": "fellowship championship",
+        "accent_color": "#10b981",
+        "accent_hover": "#059669",
+        "crest_icon": "raptors",
+        "theme_preset": "emerald",
+        "hero_title": "Frontier AI & Systems Engineering Championship."
+    })
     cursor.execute(
-        """INSERT INTO events (id, name, slug, description, submissions_close, status, weights, organizer_id, join_code, prize_pool)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        """INSERT INTO events (id, name, slug, description, submissions_close, status, weights, organizer_id, join_code, prize_pool, branding)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             "evt_02",
             "Raptors AI & Systems Challenge 2026",
@@ -82,11 +105,42 @@ def seed_database():
             raptors_weights,
             "org_root",
             "RAPTOR-2026",
-            "$100,000 USD"
+            "$100,000 USD",
+            raptors_brand
         )
     )
 
-    # 3. Tracks for evt_01
+    # 3. Event 03: MIT TechFair AI Grand Prix 2026 (UMS / Institutional Showcase)
+    mit_brand = json.dumps({
+        "brand_name": "MIT TECHFAIR",
+        "org_name": "Massachusetts Institute of Technology",
+        "sub_org": "EECS DEPT · ANNUAL STUDENT HACKATHON & GRAND PRIX",
+        "tagline": "ai grand prix 2026",
+        "accent_color": "#a31f34",
+        "accent_hover": "#801829",
+        "crest_icon": "mit",
+        "theme_preset": "crimson",
+        "hero_title": "MIT AI Grand Prix & Systems Engineering 2026."
+    })
+    cursor.execute(
+        """INSERT INTO events (id, name, slug, description, submissions_close, status, weights, organizer_id, join_code, prize_pool, branding)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            "evt_03",
+            "MIT TechFair AI Grand Prix 2026",
+            "mit-techfair-2026",
+            "Massachusetts Institute of Technology flagship hackathon for frontier artificial intelligence, autonomous robotics, and neurosymbolic architectures.",
+            "2026-11-30T23:59:59Z",
+            "active",
+            weights_json,
+            "org_root",
+            "MIT-2026",
+            "$75,000 USD",
+            mit_brand
+        )
+    )
+
+    # Tracks for evt_01
     for trk in data.get("tracks", []):
         cursor.execute(
             "INSERT INTO tracks (id, event_id, name, description) VALUES (?, ?, ?, ?)",
@@ -101,7 +155,15 @@ def seed_database():
     cursor.execute("INSERT INTO tracks (id, event_id, name, description) VALUES (?, ?, ?, ?)",
                    ("trk_r3", "evt_02", "Applied Cryptography & Privacy", "Zero-knowledge proofs, verifiable state, air-gap security"))
 
-    # 4. Teams for evt_01
+    # Tracks for evt_03 (MIT)
+    cursor.execute("INSERT INTO tracks (id, event_id, name, description) VALUES (?, ?, ?, ?)",
+                   ("trk_m1", "evt_03", "Algorithmic Reasoning & LLM Systems", "Neurosymbolic systems, theorem proving, verified execution"))
+    cursor.execute("INSERT INTO tracks (id, event_id, name, description) VALUES (?, ?, ?, ?)",
+                   ("trk_m2", "evt_03", "Autonomous Robotics & Perception", "Embodied intelligence, edge inference, real-time control"))
+    cursor.execute("INSERT INTO tracks (id, event_id, name, description) VALUES (?, ?, ?, ?)",
+                   ("trk_m3", "evt_03", "Distributed Systems & Cloud-Free Infrastructure", "Zero-cloud architectures and localized peer consensus"))
+
+    # Teams for evt_01
     for tm in data.get("teams", []):
         cursor.execute(
             "INSERT INTO teams (id, event_id, name, members, invite_code) VALUES (?, ?, ?, ?, ?)",
@@ -112,6 +174,12 @@ def seed_database():
     cursor.execute(
         "INSERT INTO teams (id, event_id, name, members, invite_code) VALUES (?, ?, ?, ?, ?)",
         ("tm_raptor_01", "evt_02", "Apex Systems", json.dumps(["lead@teamalpha.local", "alex@apex.io"]), "inv_apex_01")
+    )
+
+    # Team for evt_03 (MIT)
+    cursor.execute(
+        "INSERT INTO teams (id, event_id, name, members, invite_code) VALUES (?, ?, ?, ?, ?)",
+        ("tm_mit_01", "evt_03", "Cambridge Neural", json.dumps(["student@mit.edu", "lead@cambridgeneural.ai"]), "inv_mit_01")
     )
 
     # 5. Users / Judges / Organizers / Participants
@@ -154,6 +222,8 @@ def seed_database():
     cursor.execute("INSERT INTO event_registrations (event_id, user_id, role, joined_at) VALUES ('evt_01', 'jdg_01', 'judge', '2026-02-10T00:00:00Z')")
     cursor.execute("INSERT INTO event_registrations (event_id, user_id, role, joined_at) VALUES ('evt_01', 'jdg_02', 'judge', '2026-02-10T00:00:00Z')")
     cursor.execute("INSERT INTO event_registrations (event_id, user_id, role, joined_at) VALUES ('evt_02', 'jdg_01', 'judge', '2026-02-10T00:00:00Z')")
+    cursor.execute("INSERT INTO event_registrations (event_id, user_id, role, joined_at) VALUES ('evt_03', 'org_root', 'organizer', '2026-02-01T00:00:00Z')")
+    cursor.execute("INSERT INTO event_registrations (event_id, user_id, role, joined_at) VALUES ('evt_03', 'jdg_01', 'judge', '2026-02-10T00:00:00Z')")
 
     # 7. Projects for evt_01
     for prj in data.get("projects", []):
@@ -189,6 +259,24 @@ def seed_database():
             "https://github.com/raptors-dev/chronos",
             "https://chronos.raptors.internal",
             "2026-03-01T12:00:00Z"
+        )
+    )
+
+    # Project for evt_03 (MIT)
+    cursor.execute(
+        """INSERT INTO projects (id, event_id, team_id, track_id, title, summary, description, repo_url, demo_url, submitted_at, is_draft)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)""",
+        (
+            "prj_mit_01",
+            "evt_03",
+            "tm_mit_01",
+            "trk_m1",
+            "NeuroSymbolic Theorem Prover",
+            "Zero-cloud neural theorem prover combining verified Lean 4 kernel with local sub-millisecond LLM reasoning.",
+            "Built for the MIT TechFair AI Grand Prix. Completely self-contained, air-gapped mathematical verification.",
+            "https://github.com/mit-eecs/neurosymbolic-kernel",
+            "https://mit-ai.local",
+            "2026-10-15T12:00:00Z"
         )
     )
 
@@ -252,6 +340,11 @@ def seed_database():
  Active Competition Join Codes:
    • evt_01: SAMPLE-2026 (Sample Hack 2026 - Official Fixture Event)
    • evt_02: RAPTOR-2026 (Raptors AI & Systems Challenge 2026 - Open Live)
+   • evt_03: MIT-2026    (MIT TechFair AI Grand Prix 2026 - Institutional Portal)
+ Institutional White-Label Portals:
+   • Veritas Benchmark:  http://localhost:8080/org/sample-hack-2026
+   • Raptors Fellowship: http://localhost:8080/org/raptors-ai-2026
+   • MIT TechFair:       http://localhost:8080/org/mit-techfair-2026
 ================================================================================
 """)
 

@@ -213,9 +213,10 @@ def export_certificate(project_id: str):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        """SELECT p.id, p.title, tm.name as team_name 
+        """SELECT p.id, p.title, p.event_id, tm.name as team_name, e.name as event_name, e.branding 
            FROM projects p 
            LEFT JOIN teams tm ON p.team_id = tm.id 
+           LEFT JOIN events e ON p.event_id = e.id
            WHERE p.id = ?""",
         (project_id,)
     )
@@ -225,10 +226,24 @@ def export_certificate(project_id: str):
     if not row:
         raise HTTPException(status_code=404, detail="Project not found")
 
+    brand = {}
+    if row["branding"]:
+        try:
+            brand = json.loads(row["branding"])
+        except Exception:
+            brand = {}
+
+    org_name = brand.get("org_name") or row["event_name"] or "HACKATHON RAPTORS"
+    sub_org = brand.get("sub_org") or f"{brand.get('brand_name', 'VERITAS')} OFFICIAL COMPETITION"
+    accent = brand.get("accent_color") or "#f59e0b"
+
     svg_content = generate_svg_certificate(
         project_id=row["id"],
         title=row["title"],
         team_name=row["team_name"] or "Engineering Team",
-        rank=1
+        rank=1,
+        org_name=org_name,
+        sub_org=sub_org,
+        accent_color=accent
     )
     return Response(content=svg_content, media_type="image/svg+xml")

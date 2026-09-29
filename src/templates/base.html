@@ -23,6 +23,37 @@
       font-family: var(--font-mono);
       cursor: pointer;
     }
+    {% if active_event and active_event.brand %}
+    :root {
+      {% if active_event.brand.accent_color %}
+      --accent: {{ active_event.brand.accent_color }};
+      --accent-soft: {{ active_event.brand.accent_color }}26;
+      --brand-accent: {{ active_event.brand.accent_color }};
+      {% endif %}
+      {% if active_event.brand.accent_hover %}
+      --accent-hover: {{ active_event.brand.accent_hover }};
+      {% endif %}
+    }
+    .badge-accent {
+      background: {{ active_event.brand.accent_color }}26 !important;
+      color: {{ active_event.brand.accent_color }} !important;
+      border-color: {{ active_event.brand.accent_color }}55 !important;
+    }
+    .btn-accent {
+      background: {{ active_event.brand.accent_color }} !important;
+      border-color: {{ active_event.brand.accent_color }} !important;
+      color: #ffffff !important;
+    }
+    .btn-accent:hover {
+      background: {{ active_event.brand.accent_hover or active_event.brand.accent_color }} !important;
+    }
+    .brand-accent-text {
+      color: {{ active_event.brand.accent_color }} !important;
+    }
+    .brand-border-accent {
+      border-color: {{ active_event.brand.accent_color }} !important;
+    }
+    {% endif %}
   </style>
 </head>
 <body>
@@ -30,20 +61,44 @@
   <nav class="navbar" style="border-bottom: 1px solid var(--border); background: var(--bg-surface); padding: 0.75rem 2rem;">
     <div style="display:flex; align-items:center; gap:1.5rem;">
       <a href="/projects" class="brand-wrapper" style="text-decoration:none; display:flex; align-items:center; gap:0.6rem;">
-        <svg width="22" height="22" viewBox="0 0 34 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M17.048 37L1.21 27.57V10.8L16.83 1.06L32.88 10.43V27.2L17.28 36.93" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <path d="M17.48 20.42V27.61L25.2 23.05V15.78L17.48 20.42Z" fill="currentColor"/>
+        {% if active_event and active_event.brand and active_event.brand.crest_icon == 'mit' %}
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ active_event.brand.accent_color }}" stroke-width="2.5" stroke-linecap="round">
+          <path d="M3 4v16M8 4v16M13 4v8M18 4v16M22 4v16"/>
         </svg>
+        {% elif active_event and active_event.brand and active_event.brand.crest_icon == 'stanford' %}
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ active_event.brand.accent_color }}" stroke-width="2" stroke-linecap="round">
+          <polygon points="12 2 2 22 22 22"/>
+          <line x1="12" y1="8" x2="12" y2="16"/>
+        </svg>
+        {% elif active_event and active_event.brand and active_event.brand.crest_icon == 'oxford' %}
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ active_event.brand.accent_color }}" stroke-width="2" stroke-linecap="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5"/>
+        </svg>
+        {% elif active_event and active_event.brand and active_event.brand.crest_icon == 'raptors' %}
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ active_event.brand.accent_color }}" stroke-width="2" stroke-linecap="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        {% else %}
+        <svg width="22" height="22" viewBox="0 0 34 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17.048 37L1.21 27.57V10.8L16.83 1.06L32.88 10.43V27.2L17.28 36.93" stroke="{{ active_event.brand.accent_color if active_event and active_event.brand and active_event.brand.accent_color else 'currentColor' }}" stroke-width="2" stroke-linecap="round"/>
+          <path d="M17.48 20.42V27.61L25.2 23.05V15.78L17.48 20.42Z" fill="{{ active_event.brand.accent_color if active_event and active_event.brand and active_event.brand.accent_color else 'currentColor' }}"/>
+        </svg>
+        {% endif %}
         <span class="brand-title" style="font-weight:700; letter-spacing:0.05em; font-size:1.05rem;">
-          VERITAS <span class="serif-italic" style="text-transform:lowercase; font-size:0.95rem; color:var(--text-muted); font-weight:400;">// evaluation platform</span>
+          {{ (active_event.brand.brand_name if active_event and active_event.brand and active_event.brand.brand_name else 'VERITAS') | upper }} 
+          <span class="serif-italic" style="text-transform:lowercase; font-size:0.95rem; color:var(--text-muted); font-weight:400;">
+            // {{ active_event.brand.tagline if active_event and active_event.brand and active_event.brand.tagline else 'evaluation platform' }}
+          </span>
         </span>
       </a>
 
       <!-- Active Competition Selector -->
       {% if active_event %}
-      <span class="badge badge-accent" style="font-size:0.7rem; padding:0.2rem 0.5rem;" title="Current Competition">
-        {{ active_event.name }}
-      </span>
+      <a href="/competitions" style="text-decoration:none;">
+        <span class="badge badge-accent" style="font-size:0.7rem; padding:0.2rem 0.6rem; cursor:pointer;" title="Click to view all competitions or switch">
+          ● {{ active_event.name }}
+        </span>
+      </a>
       {% endif %}
     </div>
 
@@ -149,7 +204,7 @@
   <footer class="footer" style="border-top:1px solid var(--border); padding:2rem 0; margin-top:4rem; text-align:center; font-size:0.8rem; color:var(--text-muted); background:var(--bg-surface);">
     <div style="max-width:1100px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; padding:0 2rem;">
       <div style="font-family:var(--font-mono); font-size:0.75rem;">
-        VERITAS EVALUATION ENGINE // HIGH-INTEGRITY COMPETITIVE BENCHMARKING
+        {{ (active_event.brand.org_name if active_event and active_event.brand and active_event.brand.org_name else 'VERITAS EVALUATION ENGINE') | upper }} // HIGH-INTEGRITY COMPETITIVE BENCHMARKING
       </div>
       <div style="display:flex; gap:1.5rem;">
         <a href="/competitions" style="color:var(--text-muted); text-decoration:none;">Competitions</a>

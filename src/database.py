@@ -26,7 +26,8 @@ def init_db():
         organizer_id TEXT,
         join_code TEXT,
         banner_url TEXT,
-        prize_pool TEXT
+        prize_pool TEXT,
+        branding TEXT
     );
 
     CREATE TABLE IF NOT EXISTS tracks (
@@ -155,6 +156,7 @@ def init_db():
         ("events", "join_code", "TEXT"),
         ("events", "banner_url", "TEXT"),
         ("events", "prize_pool", "TEXT"),
+        ("events", "branding", "TEXT"),
         ("tracks", "event_id", "TEXT"),
         ("teams", "event_id", "TEXT"),
         ("projects", "event_id", "TEXT"),

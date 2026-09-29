@@ -22,14 +22,46 @@ def get_active_event_context(request: Request, event_id_or_slug: str = None):
     if event_id_or_slug:
         cursor.execute("SELECT * FROM events WHERE id = ? OR slug = ?", (event_id_or_slug, event_id_or_slug))
     else:
-        req_event = request.query_params.get("event") or request.cookies.get("active_event") or "evt_01"
+        req_event = request.query_params.get("event") or request.query_params.get("org") or request.cookies.get("active_event") or "evt_01"
         cursor.execute("SELECT * FROM events WHERE id = ? OR slug = ?", (req_event, req_event))
     row = cursor.fetchone()
     if not row:
         cursor.execute("SELECT * FROM events ORDER BY id ASC LIMIT 1")
         row = cursor.fetchone()
     conn.close()
-    return dict(row) if row else None
+    if not row:
+        return None
+    d = dict(row)
+    if d.get("branding"):
+        try:
+            d["brand"] = json.loads(d["branding"])
+        except Exception:
+            d["brand"] = {}
+    else:
+        # Default brand presets based on event
+        if d.get("id") == "evt_02" or "raptor" in (d.get("slug") or ""):
+            d["brand"] = {
+                "brand_name": "HACKATHON RAPTORS",
+                "org_name": "Hackathon Raptors Fellowship",
+                "tagline": "fellowship championship",
+                "accent_color": "#10b981",
+                "accent_hover": "#059669",
+                "theme_preset": "emerald",
+                "crest_icon": "raptors",
+                "hero_title": "Frontier AI & Systems Engineering Championship."
+            }
+        else:
+            d["brand"] = {
+                "brand_name": "VERITAS",
+                "org_name": d.get("name", "Veritas"),
+                "tagline": "evaluation platform",
+                "accent_color": "#f59e0b",
+                "accent_hover": "#d97706",
+                "theme_preset": "amber",
+                "crest_icon": "veritas",
+                "hero_title": "Software built for rigorous evaluation."
+            }
+    return d
 
 def get_all_events():
     conn = get_db()
@@ -115,6 +147,21 @@ def competition_detail_view(request: Request, slug: str):
         }
     )
 
+@router.get("/org/{slug}")
+def org_portal_view(slug: str):
+    """Institutional / White-label direct gateway. Sets active event cookie and routes to the institution's portal."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, slug, name FROM events WHERE slug = ? OR id = ?", (slug, slug))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Institution or competition '{slug}' not found.")
+    
+    response = RedirectResponse(url=f"/projects?event={row['id']}", status_code=303)
+    response.set_cookie(key="active_event", value=row["id"], max_age=86400 * 30, path="/")
+    return response
+
 @router.get("/join/{join_code}", response_class=HTMLResponse)
 def join_view(request: Request, join_code: str):
     code = join_code.strip().upper()
@@ -145,10 +192,10 @@ def join_view(request: Request, join_code: str):
     conn.commit()
     conn.close()
 
-    if user.role == "judge":
-        return RedirectResponse(url=f"/judge?event={event['id']}", status_code=303)
-    else:
-        return RedirectResponse(url=f"/participant/dashboard?event={event['id']}", status_code=303)
+    redirect_target = f"/judge?event={event['id']}" if user.role == "judge" else f"/participant/dashboard?event={event['id']}"
+    response = RedirectResponse(url=redirect_target, status_code=303)
+    response.set_cookie(key="active_event", value=event["id"], max_age=86400 * 30, path="/")
+    return response
 
 @router.get("/organizer/competitions", response_class=HTMLResponse)
 def organizer_competitions_view(request: Request):
@@ -524,9 +571,10 @@ def certificate_view(project_id: str):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        """SELECT p.id, p.title, tm.name as team_name 
+        """SELECT p.id, p.title, p.event_id, tm.name as team_name, e.name as event_name, e.branding 
            FROM projects p 
            LEFT JOIN teams tm ON p.team_id = tm.id 
+           LEFT JOIN events e ON p.event_id = e.id
            WHERE p.id = ?""",
         (project_id,)
     )
@@ -536,11 +584,25 @@ def certificate_view(project_id: str):
     if not row:
         raise HTTPException(status_code=404, detail="Project not found")
 
+    brand = {}
+    if row["branding"]:
+        try:
+            brand = json.loads(row["branding"])
+        except Exception:
+            brand = {}
+
+    org_name = brand.get("org_name") or row["event_name"] or "HACKATHON RAPTORS"
+    sub_org = brand.get("sub_org") or f"{brand.get('brand_name', 'VERITAS')} OFFICIAL COMPETITION"
+    accent = brand.get("accent_color") or "#f59e0b"
+
     svg_content = generate_svg_certificate(
         project_id=row["id"],
         title=row["title"],
         team_name=row["team_name"] or "Engineering Team",
-        rank=1
+        rank=1,
+        org_name=org_name,
+        sub_org=sub_org,
+        accent_color=accent
     )
     return Response(content=svg_content, media_type="image/svg+xml")
 
