@@ -109,6 +109,26 @@
         </div>
       </div>
     </div>
+
+    <!-- Verifiable Certificate Card -->
+    <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(16, 185, 129, 0.08)); border:1px solid rgba(245, 158, 11, 0.3); padding:1.5rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+        <div>
+          <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#f59e0b; font-weight:700;">
+            Official Award & Proof of Build
+          </div>
+          <h3 style="font-family:var(--font-serif); font-size:1.35rem; margin:0.25rem 0 0.4rem 0;">
+            Cryptographic Certificate
+          </h3>
+          <p style="color:var(--text-secondary); font-size:0.85rem; margin:0; max-width:480px;">
+            Standalone high-resolution vector SVG certificate sealed with an RFC 8032 Ed25519 verification hash for <strong>{{ project.title if project else 'Your Project' }}</strong>.
+          </p>
+        </div>
+        <a href="/certificates/{{ project.id if project else 'prj_01' }}" target="_blank" class="btn btn-primary" style="padding:0.6rem 1.25rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.5rem; background:linear-gradient(135deg, #f59e0b, #d97706); color:#000; border:none; font-weight:600; text-decoration:none;">
+          <span>🏆</span> View & Download SVG
+        </a>
+      </div>
+    </div>
   </div>
 
   <!-- Right Column: Team Roster & Invites -->

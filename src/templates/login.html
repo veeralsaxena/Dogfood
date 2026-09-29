@@ -12,6 +12,12 @@
     </p>
   </div>
 
+  {% if join_code %}
+  <div style="background:rgba(59, 130, 246, 0.15); border:1px solid #3b82f6; border-radius:4px; padding:0.75rem 1rem; margin-bottom:1.5rem; text-align:center; font-size:0.85rem; color:#93c5fd;">
+    <strong>Competition Invitation:</strong> You are joining with code <code style="color:#fff; font-family:var(--font-mono); font-weight:700;">{{ join_code }}</code>. Sign in or <a href="/signup?join_code={{ join_code }}" style="color:#fff; text-decoration:underline; font-weight:600;">register a new account</a>.
+  </div>
+  {% endif %}
+
   <div class="card" style="padding: 2.25rem; border: 1px solid var(--border-light);">
     <form id="login-form" onsubmit="handleFormLogin(event)">
       <div style="margin-bottom: 1.25rem;">
@@ -41,7 +47,7 @@
 
     <div style="margin-top: 1.5rem; text-align: center; font-size:0.85rem;">
       <span style="color:var(--text-muted);">New participant?</span>
-      <a href="/signup" style="color:var(--text-primary); font-weight:600; text-decoration:none; margin-left:0.35rem;">
+      <a href="/signup{% if join_code %}?join_code={{ join_code }}{% endif %}" style="color:var(--text-primary); font-weight:600; text-decoration:none; margin-left:0.35rem;">
         Register your account →
       </a>
     </div>
