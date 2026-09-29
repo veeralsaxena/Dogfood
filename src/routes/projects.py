@@ -43,10 +43,16 @@ def submit_project(project: ProjectCreate, request: Request):
     cursor = conn.cursor()
 
     # 1. Enforce deadline from events table
-    cursor.execute("SELECT submissions_close FROM events LIMIT 1")
+    target_event_id = project.event_id or "evt_01"
+    cursor.execute("SELECT id, submissions_close FROM events WHERE id = ? OR slug = ?", (target_event_id, target_event_id))
     event_row = cursor.fetchone()
+    if not event_row:
+        cursor.execute("SELECT id, submissions_close FROM events LIMIT 1")
+        event_row = cursor.fetchone()
+
     if event_row:
         close_str = event_row["submissions_close"]
+        target_event_id = event_row["id"]
         try:
             close_dt = datetime.fromisoformat(close_str.replace("Z", "+00:00"))
             now_dt = datetime.now(timezone.utc)
@@ -62,10 +68,11 @@ def submit_project(project: ProjectCreate, request: Request):
     new_id = f"prj_{uuid.uuid4().hex[:6]}"
     now_iso = datetime.now(timezone.utc).isoformat()
     cursor.execute(
-        """INSERT INTO projects (id, team_id, track_id, title, summary, description, repo_url, demo_url, submitted_at, is_draft)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        """INSERT INTO projects (id, event_id, team_id, track_id, title, summary, description, repo_url, demo_url, submitted_at, is_draft)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             new_id,
+            target_event_id,
             project.team_id or "tm_user",
             project.track_id or "trk_01",
             project.title,

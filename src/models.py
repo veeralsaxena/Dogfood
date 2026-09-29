@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Dict, List, Optional, Any
 
 class ProjectCreate(BaseModel):
+    event_id: Optional[str] = "evt_01"
     title: str
     summary: Optional[str] = ""
     description: Optional[str] = ""
