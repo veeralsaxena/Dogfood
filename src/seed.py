@@ -295,19 +295,19 @@ def seed_database():
     # Teams for evt_01
     for tm in data.get("teams", []):
         cursor.execute(
-            "INSERT INTO teams (id, event_id, name, members, invite_code) VALUES (?, ?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO teams (id, event_id, name, members, invite_code) VALUES (?, ?, ?, ?, ?)",
             (tm["id"], "evt_01", tm["name"], json.dumps(tm.get("members", [])), f"inv_{tm['id']}")
         )
 
     # Team for evt_02
     cursor.execute(
-        "INSERT INTO teams (id, event_id, name, members, invite_code) VALUES (?, ?, ?, ?, ?)",
+        "INSERT OR REPLACE INTO teams (id, event_id, name, members, invite_code) VALUES (?, ?, ?, ?, ?)",
         ("tm_raptor_01", "evt_02", "Apex Systems", json.dumps(["lead@teamalpha.local", "alex@apex.io"]), "inv_apex_01")
     )
 
     # Team for evt_03 (MIT)
     cursor.execute(
-        "INSERT INTO teams (id, event_id, name, members, invite_code) VALUES (?, ?, ?, ?, ?)",
+        "INSERT OR REPLACE INTO teams (id, event_id, name, members, invite_code) VALUES (?, ?, ?, ?, ?)",
         ("tm_mit_01", "evt_03", "Cambridge Neural", json.dumps(["student@mit.edu", "lead@cambridgeneural.ai"]), "inv_mit_01")
     )
 

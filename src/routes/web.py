@@ -851,7 +851,7 @@ def signup_view(request: Request, join_code: str = Query(None)):
         context={
             "active_page": "signup",
             "user": None,
-            "join_code": join_code or "RAPTOR-2026",
+            "join_code": join_code or "",
             "active_event": active_event,
             "all_events": all_events
         }
@@ -902,12 +902,15 @@ def participant_dashboard_view(request: Request, event: str = Query(None)):
         return RedirectResponse(url="/login", status_code=303)
 
     active_event = get_active_event_context(request, event)
+    all_events = get_all_events()
 
     conn = get_db()
     cursor = conn.cursor()
 
-    # User teams
-    cursor.execute("SELECT * FROM teams")
+    target_event_id = active_event["id"] if active_event else "evt_01"
+
+    # User teams for this event
+    cursor.execute("SELECT * FROM teams WHERE (event_id = ? OR event_id IS NULL)", (target_event_id,))
     teams = [dict(r) for r in cursor.fetchall()]
     user_team = None
     team_members = []
@@ -918,23 +921,18 @@ def participant_dashboard_view(request: Request, event: str = Query(None)):
             team_members = members
             break
 
-    if not user_team and teams:
-        user_team = teams[0]
-        team_members = json.loads(user_team.get("members", "[]")) if user_team.get("members") else []
-
+    # Look up project for this team in this event
     project = None
     if user_team:
-        cursor.execute("SELECT * FROM projects WHERE team_id = ? ORDER BY id DESC LIMIT 1", (user_team["id"],))
+        cursor.execute(
+            "SELECT * FROM projects WHERE team_id = ? AND (event_id = ? OR event_id IS NULL) ORDER BY id DESC LIMIT 1",
+            (user_team["id"], target_event_id)
+        )
         p_row = cursor.fetchone()
         if p_row:
             project = dict(p_row)
 
-    if not project:
-        cursor.execute("SELECT * FROM projects ORDER BY id DESC LIMIT 1")
-        p_row = cursor.fetchone()
-        if p_row:
-            project = dict(p_row)
-
+    # Check track if project exists
     track = None
     if project and project.get("track_id"):
         cursor.execute("SELECT * FROM tracks WHERE id = ?", (project["track_id"],))
@@ -942,6 +940,7 @@ def participant_dashboard_view(request: Request, event: str = Query(None)):
         if tr_row:
             track = dict(tr_row)
 
+    # Tracks for active event
     track_query = "SELECT id, name FROM tracks"
     track_params = []
     if active_event:
@@ -954,7 +953,18 @@ def participant_dashboard_view(request: Request, event: str = Query(None)):
         cursor.execute("SELECT id, name FROM tracks ORDER BY id ASC LIMIT 8")
         tracks = [dict(r) for r in cursor.fetchall()]
 
+    # Check events user is registered for
+    cursor.execute("""
+        SELECT e.* FROM events e
+        JOIN event_registrations er ON e.id = er.event_id
+        WHERE er.user_id = ?
+        ORDER BY e.submissions_close DESC
+    """, (user.id,))
+    registered_events = [dict(r) for r in cursor.fetchall()]
+
     conn.close()
+
+    now_iso = datetime.now(timezone.utc).isoformat()
 
     return templates.TemplateResponse(
         request=request,
@@ -964,11 +974,14 @@ def participant_dashboard_view(request: Request, event: str = Query(None)):
             "user": user,
             "event": active_event,
             "active_event": active_event,
+            "all_events": all_events,
+            "registered_events": registered_events,
             "team": user_team,
             "team_members": team_members,
             "project": project,
             "track": track,
-            "tracks": tracks
+            "tracks": tracks,
+            "now_iso": now_iso
         }
     )
 

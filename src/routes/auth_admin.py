@@ -35,7 +35,8 @@ class SignupRequest(BaseModel):
     name: str
     email: str
     password: str
-    join_code: Optional[str] = "RAPTOR-2026"
+    event_id: Optional[str] = None
+    join_code: Optional[str] = None
 
 @router.post("/api/auth/signup")
 def signup_user(payload: SignupRequest, response: Response):
@@ -52,9 +53,14 @@ def signup_user(payload: SignupRequest, response: Response):
         conn.close()
         raise HTTPException(status_code=400, detail="An account with this email already exists. Please sign in.")
 
-    # Find event by join_code if provided, default to evt_02
+    # Determine event to register for
     event_id = "evt_02"
-    if payload.join_code:
+    if payload.event_id:
+        cursor.execute("SELECT id FROM events WHERE id = ?", (payload.event_id.strip(),))
+        ev = cursor.fetchone()
+        if ev:
+            event_id = ev["id"]
+    elif payload.join_code and payload.join_code.strip():
         code = payload.join_code.strip().upper()
         cursor.execute("SELECT id FROM events WHERE UPPER(join_code) = ? OR id = ?", (code, payload.join_code.strip()))
         ev = cursor.fetchone()
@@ -95,7 +101,7 @@ def signup_user(payload: SignupRequest, response: Response):
             "role": "participant"
         },
         "token": user_token,
-        "redirect_url": "/participant/dashboard"
+        "redirect_url": f"/participant/dashboard?event={event_id}"
     }
 
 @router.post("/api/organizer/invites")

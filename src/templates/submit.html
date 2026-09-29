@@ -82,7 +82,8 @@
             TEAM ASSIGNMENT
           </label>
           <select id="team_id" class="search-input" style="width:100%;">
-            {% for tm in teams[:10] %}
+            <option value="">No Team (Individual / Solo Submission)</option>
+            {% for tm in teams %}
               <option value="{{ tm.id }}">{{ tm.name }} ({{ tm.id }})</option>
             {% endfor %}
           </select>
@@ -146,7 +147,7 @@ async function handleSubmit(e) {
     event_id: eventId,
     title: document.getElementById('title').value,
     track_id: document.getElementById('track_id').value,
-    team_id: document.getElementById('team_id').value,
+    team_id: document.getElementById('team_id').value || null,
     summary: document.getElementById('summary').value,
     repo_url: document.getElementById('repo_url').value,
     demo_url: document.getElementById('demo_url').value,

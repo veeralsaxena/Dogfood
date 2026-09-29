@@ -31,11 +31,11 @@ Veritas is a self-contained, offline-first evaluation platform for hackathons.
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | M1: Auth & Session Hardening | Eliminate hardcoded auth fallbacks (R5) | none | IN_PROGRESS |
-| 2 | M2: Judge Portal Queue & State Persistence | Fix queue truncation, pre-populate scores, show badge (R4) | M1 | PLANNED |
-| 3 | M3: Arena De-Anchoring & Leaderboard Isolation | Hide arena leaderboard from judges, add counter/notice, expose in war-room (R1) | M1 | PLANNED |
-| 4 | M4: Rich Cards, Skip & Track-Aware Arena | Enrich cards, update copy, add skip button, track filter & matchmaking (R2, R3) | M3 | PLANNED |
-| 5 | M5: Final Verification & Test Hardening | 100% pass on pytest, spec runner T1/T2, forensic audit (All AC) | M1, M2, M3, M4 | PLANNED |
+| 1 | M1: Auth & Session Hardening | Eliminate hardcoded auth fallbacks (R5) | none | DONE |
+| 2 | M2: Judge Portal Queue & State Persistence | Fix queue truncation, pre-populate scores, show badge (R4) | M1 | DONE |
+| 3 | M3: Arena De-Anchoring & Leaderboard Isolation | Hide arena leaderboard from judges, add counter/notice, expose in war-room (R1) | M1 | DONE |
+| 4 | M4: Rich Cards, Skip & Track-Aware Arena | Enrich cards, update copy, add skip button, track filter & matchmaking (R2, R3) | M3 | DONE |
+| 5 | M5: Final Verification & Test Hardening | 100% pass on pytest, spec runner T1/T2, forensic audit (All AC) | M1, M2, M3, M4 | DONE |
 
 ## Code Layout
 - `src/core/auth.py`: Authentication, token parsing, role dependencies

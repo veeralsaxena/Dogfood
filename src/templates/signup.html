@@ -35,13 +35,26 @@
         <input type="password" id="password-input" required minlength="6" class="input" style="width:100%;" placeholder="Minimum 6 characters" />
       </div>
 
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem; color:var(--text-secondary);">
+          Target Competition
+        </label>
+        <select id="event-select" class="input" style="width:100%;">
+          {% for ev in all_events %}
+          <option value="{{ ev.id }}" {% if active_event and ev.id == active_event.id %}selected{% endif %}>
+            {{ ev.name }} ({{ ev.id }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
       <div style="margin-bottom: 1.5rem;">
         <label style="display:block; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem; color:var(--text-secondary);">
-          Competition Join Code
+          Competition Join Code (Optional)
         </label>
-        <input type="text" id="join-code-input" class="input" style="width:100%; font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.08em;" value="{{ join_code }}" placeholder="e.g. RAPTOR-2026" />
+        <input type="text" id="join-code-input" class="input" style="width:100%; font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.08em;" value="{{ join_code }}" placeholder="e.g. RAPTOR-2026 or leave blank" />
         <span style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:0.35rem;">
-          Default: <strong style="color:var(--text-primary);">RAPTOR-2026</strong> (Raptors AI & Systems Challenge 2026)
+          Optional: If your organizer provided a private invitation or competition code, enter it here.
         </span>
       </div>
 
@@ -66,6 +79,7 @@ async function handleSignup(e) {
   const name = document.getElementById("name-input").value.trim();
   const email = document.getElementById("email-input").value.trim();
   const password = document.getElementById("password-input").value;
+  const eventId = document.getElementById("event-select").value;
   const joinCode = document.getElementById("join-code-input").value.trim();
   const errDiv = document.getElementById("signup-error");
   const btn = document.getElementById("signup-btn");
@@ -82,7 +96,8 @@ async function handleSignup(e) {
         name: name,
         email: email,
         password: password,
-        join_code: joinCode
+        event_id: eventId,
+        join_code: joinCode || null
       })
     });
 

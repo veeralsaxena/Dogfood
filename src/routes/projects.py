@@ -1,10 +1,16 @@
 import json
+import secrets
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from typing import List, Optional
+from pydantic import BaseModel
 from src.database import get_db, log_audit
 from src.models import ProjectCreate, ProjectResponse
 from src.core.auth import get_current_user, require_auth, UserPrincipal
+
+class TeamCreateRequest(BaseModel):
+    name: str
+    event_id: Optional[str] = "evt_02"
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
@@ -69,10 +75,17 @@ def submit_project(project: ProjectCreate, request: Request):
     now_iso = datetime.now(timezone.utc).isoformat()
 
     valid_team_id = None
-    if project.team_id:
-        cursor.execute("SELECT id FROM teams WHERE id = ?", (project.team_id,))
+    if project.team_id and str(project.team_id).strip():
+        cursor.execute("SELECT id FROM teams WHERE id = ?", (str(project.team_id).strip(),))
         if cursor.fetchone():
-            valid_team_id = project.team_id
+            valid_team_id = str(project.team_id).strip()
+    elif user:
+        cursor.execute("SELECT id, members FROM teams WHERE (event_id = ? OR event_id IS NULL)", (target_event_id,))
+        for t_row in cursor.fetchall():
+            m_list = json.loads(t_row["members"]) if t_row["members"] else []
+            if any(user.email.lower() == str(m).lower() or user.name.lower() == str(m).lower() for m in m_list):
+                valid_team_id = t_row["id"]
+                break
 
     valid_track_id = None
     if project.track_id:
@@ -133,33 +146,137 @@ def get_project(project_id: str):
 team_router = APIRouter(prefix="/api/teams", tags=["teams"])
 event_router = APIRouter(prefix="/api/event", tags=["event"])
 
+@team_router.post("/create")
+def create_team(payload: TeamCreateRequest, request: Request):
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required to create a team")
+    
+    team_name = payload.name.strip()
+    if not team_name:
+        raise HTTPException(status_code=400, detail="Team name is required")
+    
+    event_id = payload.event_id or "evt_02"
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Check if user already in a team for this event
+    cursor.execute("SELECT id, name, members FROM teams WHERE (event_id = ? OR event_id IS NULL)", (event_id,))
+    for row in cursor.fetchall():
+        members = json.loads(row["members"]) if row["members"] else []
+        if any(user.email.lower() == str(m).lower() or user.name.lower() == str(m).lower() for m in members):
+            conn.close()
+            raise HTTPException(status_code=400, detail=f"You are already in team '{row['name']}' for this competition.")
+    
+    team_id = f"tm_{secrets.token_hex(4)}"
+    invite_code = f"inv_{secrets.token_hex(4)}"
+    members = [user.email]
+    
+    cursor.execute(
+        "INSERT INTO teams (id, event_id, name, members, invite_code) VALUES (?, ?, ?, ?, ?)",
+        (team_id, event_id, team_name, json.dumps(members), invite_code)
+    )
+    
+    now = datetime.now(timezone.utc).isoformat()
+    cursor.execute(
+        """INSERT INTO event_registrations (event_id, user_id, role, joined_at)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(event_id, user_id) DO NOTHING""",
+        (event_id, user.id, "participant", now)
+    )
+    
+    conn.commit()
+    conn.close()
+    log_audit("TEAM_CREATED", user.email, team_id, f"Created team {team_name} for {event_id}")
+    return {
+        "status": "success",
+        "team": {
+            "id": team_id,
+            "event_id": event_id,
+            "name": team_name,
+            "invite_code": invite_code,
+            "members": members
+        }
+    }
+
+@team_router.post("/join")
 @team_router.post("/join/{invite_code}")
-def join_team_by_code(invite_code: str, body: dict):
-    email = body.get("email")
+def join_team_by_code(request: Request, invite_code: Optional[str] = None, body: Optional[dict] = None):
+    body = body or {}
+    code = invite_code or body.get("invite_code")
+    if not code:
+        raise HTTPException(status_code=400, detail="Invite code is required")
+
+    user = get_current_user(request)
+    email = body.get("email") or (user.email if user else None)
     if not email:
         raise HTTPException(status_code=400, detail="Email is required")
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM teams WHERE invite_code = ?", (invite_code,))
+    cursor.execute("SELECT * FROM teams WHERE invite_code = ?", (code.strip(),))
     row = cursor.fetchone()
     if not row:
         conn.close()
         raise HTTPException(status_code=404, detail="Team invite code not found")
 
-    members = json.loads(row["members"])
-    if len(members) >= 4:
+    members = json.loads(row["members"]) if row["members"] else []
+    if len(members) >= 4 and not any(email.lower() == str(m).lower() for m in members):
         conn.close()
         raise HTTPException(status_code=400, detail="Team is already full (maximum 4 members)")
 
-    if email not in members:
+    if row["event_id"]:
+        cursor.execute("SELECT id, name, members FROM teams WHERE event_id = ? AND id != ?", (row["event_id"], row["id"]))
+        for other_tm in cursor.fetchall():
+            other_m = json.loads(other_tm["members"]) if other_tm["members"] else []
+            if any(email.lower() == str(m).lower() for m in other_m):
+                conn.close()
+                raise HTTPException(status_code=400, detail=f"You are already in team '{other_tm['name']}' for this competition. Leave it first.")
+
+    if not any(email.lower() == str(m).lower() for m in members):
         members.append(email)
         cursor.execute("UPDATE teams SET members = ? WHERE id = ?", (json.dumps(members), row["id"]))
-        conn.commit()
 
+    if user and row["event_id"]:
+        now = datetime.now(timezone.utc).isoformat()
+        cursor.execute(
+            """INSERT INTO event_registrations (event_id, user_id, role, joined_at)
+               VALUES (?, ?, ?, ?)
+               ON CONFLICT(event_id, user_id) DO NOTHING""",
+            (row["event_id"], user.id, "participant", now)
+        )
+
+    conn.commit()
     conn.close()
     log_audit("TEAM_JOINED", email, row["id"], f"Joined team {row['name']}")
-    return {"status": "success", "team_id": row["id"], "team_name": row["name"], "members": members}
+    return {"status": "success", "team_id": row["id"], "team_name": row["name"], "event_id": row["event_id"], "members": members}
+
+@team_router.post("/leave")
+def leave_team_endpoint(request: Request, body: dict):
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    team_id = body.get("team_id")
+    if not team_id:
+        raise HTTPException(status_code=400, detail="team_id is required")
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM teams WHERE id = ?", (team_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    members = json.loads(row["members"]) if row["members"] else []
+    members = [m for m in members if user.email.lower() != str(m).lower() and user.name.lower() != str(m).lower()]
+    cursor.execute("UPDATE teams SET members = ? WHERE id = ?", (json.dumps(members), team_id))
+    conn.commit()
+    conn.close()
+    log_audit("TEAM_LEFT", user.email, team_id, f"Left team {row['name']}")
+    return {"status": "success", "message": f"Left team {row['name']}"}
 
 @event_router.post("/settings")
 def update_event_settings(settings: dict, user: UserPrincipal = Depends(require_auth)):

@@ -27,9 +27,15 @@ venv/
 ENV/
 
 # Database & runtime data (leave fixture data intact)
+*.db
+*.db-wal
+*.db-shm
 data/*.db
 data/*.db-wal
 data/*.db-shm
+src/*.db
+src/*.db-wal
+src/*.db-shm
 data/*.pem
 
 # Testing
