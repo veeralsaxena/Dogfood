@@ -26,229 +26,408 @@
   </style>
 </head>
 <body>
-
-
-  <!-- Primary Top Navbar -->
-  <nav class="navbar">
-    <div class="nav-left">
-      <a href="/projects" class="brand-wrapper" title="Veritas — Competitive Evaluation Platform">
-        <svg width="22" height="22" viewBox="0 0 34 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M17.048 37L1.21 27.57V10.8L16.83 1.06L32.88 10.43V27.2L17.28 36.93" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <path d="M17.48 20.42V27.61L25.2 23.05V15.78L17.48 20.42Z" fill="currentColor"/>
-        </svg>
-        <span class="brand-title">VERITAS</span>
+  <!-- Unstop-Style Expandable Left Navigation Sidebar -->
+  <aside class="app-sidebar" id="app-sidebar" aria-label="Main Navigation">
+    <!-- Top Brand Header (Clean App Icon & Expanding Wordmark, No Clunky Avatar Box) -->
+    <div class="sidebar-header">
+      <a href="/projects" class="sidebar-brand" title="Veritas Platform">
+        <div class="sidebar-brand-icon">
+          <svg width="24" height="24" viewBox="0 0 34 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.048 37L1.21 27.57V10.8L16.83 1.06L32.88 10.43V27.2L17.28 36.93" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M17.48 20.42V27.61L25.2 23.05V15.78L17.48 20.42Z" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="sidebar-brand-text">
+          <span class="sidebar-brand-title">VERITAS</span>
+          <span class="sidebar-brand-badge">COMPETE</span>
+        </div>
       </a>
+    </div>
 
-      <!-- Compact Active Competition Chip (Fixed Max-Width) -->
-      {% if active_event %}
-      <a href="/competitions" class="nav-event-chip" title="Active: {{ active_event.name }} (Click to switch)">
-        <span class="nav-event-dot"></span>
-        <span class="nav-event-text">{{ active_event.name }}</span>
-      </a>
+    <!-- Navigation List with Hover-Expanding Subsections -->
+    <ul class="sidebar-nav-list">
+      <!-- Competitions -->
+      <li class="sidebar-nav-group">
+        <a href="/competitions" class="sidebar-nav-item {% if active_page == 'competitions' %}active{% endif %}" title="Competitions">
+          <div class="sidebar-icon-wrap">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2"/><path d="M6 5v5a6 6 0 0 0 12 0V5"/><path d="M12 15v5"/><path d="M8 20h8"/></svg>
+          </div>
+          <span class="sidebar-label">Competitions</span>
+          <span class="sidebar-arrow">›</span>
+        </a>
+        <div class="sidebar-submenu-wrapper">
+          <ul class="sidebar-submenu">
+            <li><a href="/competitions" class="sidebar-subitem">Browse All Events</a></li>
+            {% if active_event %}
+            <li>
+              <a href="/competitions" class="sidebar-subitem" style="color:var(--emerald); display:flex; align-items:center; gap:0.4rem;">
+                <span class="pulse-dot" style="width:5px; height:5px;"></span>
+                <span style="overflow:hidden; text-overflow:ellipsis;">{{ active_event.name }}</span>
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </li>
+
+      <!-- Showcase Gallery -->
+      <li class="sidebar-nav-group">
+        <a href="/projects" class="sidebar-nav-item {% if active_page == 'gallery' %}active{% endif %}" title="Showcase Gallery">
+          <div class="sidebar-icon-wrap">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <span class="sidebar-label">Showcase</span>
+          <span class="sidebar-arrow">›</span>
+        </a>
+        <div class="sidebar-submenu-wrapper">
+          <ul class="sidebar-submenu">
+            <li><a href="/projects" class="sidebar-subitem">Project Gallery</a></li>
+            <li><a href="/vote" class="sidebar-subitem">Community Ballot</a></li>
+          </ul>
+        </div>
+      </li>
+
+      {% if user and user.role == 'participant' %}
+      <!-- Participant Dashboard -->
+      <li class="sidebar-nav-group">
+        <a href="/participant/dashboard" class="sidebar-nav-item {% if active_page == 'participant_dash' %}active{% endif %}" title="Participant Dashboard">
+          <div class="sidebar-icon-wrap">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          </div>
+          <span class="sidebar-label">Dashboard</span>
+          <span class="sidebar-arrow">›</span>
+        </a>
+        <div class="sidebar-submenu-wrapper">
+          <ul class="sidebar-submenu">
+            <li><a href="/participant/dashboard" class="sidebar-subitem">Team Overview</a></li>
+            <li><a href="/participant/dashboard#team" class="sidebar-subitem">Team Roster</a></li>
+            <li><a href="/submit" class="sidebar-subitem">Submit Project</a></li>
+          </ul>
+        </div>
+      </li>
+      <!-- Submit Project -->
+      <li>
+        <a href="/submit" class="sidebar-nav-item {% if active_page == 'submit' %}active{% endif %}" title="Submit Project">
+          <div class="sidebar-icon-wrap">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <span class="sidebar-label">Submit Project</span>
+        </a>
+      </li>
       {% endif %}
-    </div>
 
-    <!-- Center Navigation Links (Concise, Distraction-Free, Priority-Sorted) -->
-    <div class="nav-center">
-      <ul class="nav-links">
-        {% if not user or user.role == 'visitor' %}
-          <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
-          <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
-          <li><a href="/vote" class="nav-link {% if active_page == 'vote' %}active{% endif %}">Ballot</a></li>
-          <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Audit</a></li>
+      {% if user and user.role == 'judge' %}
+      <!-- Judge Queue -->
+      <li class="sidebar-nav-group">
+        <a href="/judge" class="sidebar-nav-item {% if active_page == 'judge' %}active{% endif %}" title="Evaluation Queue">
+          <div class="sidebar-icon-wrap">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </div>
+          <span class="sidebar-label">Judge Queue</span>
+          <span class="sidebar-arrow">›</span>
+        </a>
+        <div class="sidebar-submenu-wrapper">
+          <ul class="sidebar-submenu">
+            <li><a href="/judge" class="sidebar-subitem">Evaluation Queue</a></li>
+            <li><a href="/arena" class="sidebar-subitem">Pairwise Arena</a></li>
+          </ul>
+        </div>
+      </li>
+      <!-- Pairwise Arena -->
+      <li>
+        <a href="/arena" class="sidebar-nav-item {% if active_page == 'arena' %}active{% endif %}" title="Pairwise Arena">
+          <div class="sidebar-icon-wrap">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <span class="sidebar-label">Pairwise Arena</span>
+        </a>
+      </li>
+      {% endif %}
 
-        {% elif user.role == 'participant' %}
-          <li><a href="/participant/dashboard" class="nav-link {% if active_page == 'participant_dash' %}active{% endif %}">Dashboard</a></li>
-          <li><a href="/submit" class="nav-link {% if active_page == 'submit' %}active{% endif %}">Submit</a></li>
-          <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
-          <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
+      {% if user and user.role in ('organizer', 'admin') %}
+      <!-- War Room -->
+      <li class="sidebar-nav-group">
+        <a href="/war-room" class="sidebar-nav-item {% if active_page == 'war_room' %}active{% endif %}" title="War Room Operations">
+          <div class="sidebar-icon-wrap">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+          <span class="sidebar-label">War Room</span>
+          <span class="sidebar-arrow">›</span>
+        </a>
+        <div class="sidebar-submenu-wrapper">
+          <ul class="sidebar-submenu">
+            <li><a href="/war-room" class="sidebar-subitem">Live Operations</a></li>
+            <li><a href="/organizer/competitions" class="sidebar-subitem">Manage Events</a></li>
+            <li><a href="/settings" class="sidebar-subitem">Rubrics & Criteria</a></li>
+          </ul>
+        </div>
+      </li>
+      <!-- Manage Competitions -->
+      <li>
+        <a href="/organizer/competitions" class="sidebar-nav-item {% if active_page == 'org_competitions' %}active{% endif %}" title="Manage Competitions">
+          <div class="sidebar-icon-wrap">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </div>
+          <span class="sidebar-label">Manage Events</span>
+        </a>
+      </li>
+      <!-- Rubric Settings -->
+      <li>
+        <a href="/settings" class="sidebar-nav-item {% if active_page == 'settings' %}active{% endif %}" title="Rubric & Scoring Settings">
+          <div class="sidebar-icon-wrap">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          </div>
+          <span class="sidebar-label">Rubric & Criteria</span>
+        </a>
+      </li>
+      <!-- Pairwise Arena -->
+      <li>
+        <a href="/arena" class="sidebar-nav-item {% if active_page == 'arena' %}active{% endif %}" title="Pairwise Arena">
+          <div class="sidebar-icon-wrap">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <span class="sidebar-label">Pairwise Arena</span>
+        </a>
+      </li>
+      {% endif %}
 
-        {% elif user.role == 'judge' %}
-          <li><a href="/judge" class="nav-link {% if active_page == 'judge' %}active{% endif %}">Queue</a></li>
-          <li><a href="/arena" class="nav-link {% if active_page == 'arena' %}active{% endif %}">Arena</a></li>
-          <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
-          <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
+      <!-- Community Ballot -->
+      <li>
+        <a href="/vote" class="sidebar-nav-item {% if active_page == 'vote' %}active{% endif %}" title="Community Ballot">
+          <div class="sidebar-icon-wrap">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <span class="sidebar-label">Community Ballot</span>
+        </a>
+      </li>
 
-        {% elif user.role in ('organizer', 'admin') %}
-          <li><a href="/war-room" class="nav-link {% if active_page == 'war_room' %}active{% endif %}">War Room</a></li>
-          <li><a href="/organizer/competitions" class="nav-link {% if active_page == 'org_competitions' %}active{% endif %}">Competitions</a></li>
-          <li><a href="/settings" class="nav-link {% if active_page == 'settings' %}active{% endif %}">Rubric</a></li>
-          <li><a href="/arena" class="nav-link {% if active_page == 'arena' %}active{% endif %}">Arena</a></li>
-        {% endif %}
-      </ul>
-    </div>
+      <!-- Public Audit -->
+      <li>
+        <a href="/audit" class="sidebar-nav-item {% if active_page == 'audit' %}active{% endif %}" title="Cryptographic Audit Verification">
+          <div class="sidebar-icon-wrap">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <span class="sidebar-label">Audit Verification</span>
+        </a>
+      </li>
+    </ul>
 
-    <!-- Right Navigation Controls -->
-    <div class="nav-right">
+    <!-- Sidebar Footer (Bottom Profile & Utility Actions) -->
+    <div class="sidebar-footer">
+      <button onclick="openJoinModal()" class="sidebar-nav-item" style="border:none; background:transparent; width:100%; cursor:pointer; text-align:left;" title="Join Competition with Code">
+        <div class="sidebar-icon-wrap">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        </div>
+        <span class="sidebar-label">Enter Join Code</span>
+      </button>
+
       {% if user and user.role != 'visitor' %}
-        <!-- Compact User Account Dropdown -->
-        <div class="user-menu" id="nav-user-menu">
-          <button type="button" class="user-menu-btn" onclick="toggleUserDropdown(event)" aria-label="User Account Menu">
-            <span class="user-avatar-circle">{{ (user.name or user.role)[:1] | upper }}</span>
-            <span class="user-menu-name">{{ user.name.split()[0] if user.name else user.role }}</span>
-            <span class="badge {% if user.role == 'organizer' %}badge-emerald{% elif user.role == 'judge' %}badge-purple{% else %}badge-accent{% endif %}" style="font-size:0.62rem; padding:0.1rem 0.35rem; text-transform:uppercase;">
+      <div class="sidebar-user-footer">
+        <a href="/profile" class="sidebar-user-card" title="Account & Security ({{ user.name }})">
+          <div class="sidebar-user-avatar">
+            <span class="sidebar-avatar-circle">{{ (user.name or user.role)[:1] | upper }}</span>
+          </div>
+          <div class="sidebar-user-info">
+            <span class="sidebar-user-name">{{ user.name.split()[0] if user.name else user.role }}</span>
+            <span class="badge {% if user.role == 'organizer' %}badge-emerald{% elif user.role == 'judge' %}badge-purple{% else %}badge-accent{% endif %}" style="font-size:0.58rem; padding:0.05rem 0.3rem; text-transform:uppercase;">
               {{ user.role }}
             </span>
-            <span style="font-size:0.65rem; color:var(--text-muted); margin-left:0.15rem;">▾</span>
-          </button>
-
-          <div class="user-dropdown" id="nav-user-dropdown">
-            <div class="user-dropdown-header">
-              <div style="font-weight:600; font-size:0.85rem; color:var(--text-primary);">{{ user.name }}</div>
-              <div style="font-size:0.72rem; color:var(--text-muted); font-family:var(--font-mono); text-overflow:ellipsis; overflow:hidden;">{{ user.email }}</div>
-            </div>
-            
-            {% if user.role == 'participant' %}
-            <a href="/participant/dashboard" class="user-dropdown-item">My Dashboard</a>
-            <a href="/submit" class="user-dropdown-item">Submit Project</a>
-            <a href="/participant/dashboard#team" class="user-dropdown-item">Team Roster</a>
-            <a href="/vote" class="user-dropdown-item">Community Ballot</a>
-            {% elif user.role == 'judge' %}
-            <a href="/judge" class="user-dropdown-item">Evaluation Queue</a>
-            <a href="/arena" class="user-dropdown-item">Pairwise Arena</a>
-            <a href="/audit" class="user-dropdown-item">Audit Verification</a>
-            {% elif user.role in ('organizer', 'admin') %}
-            <a href="/war-room" class="user-dropdown-item">War Room</a>
-            <a href="/organizer/competitions" class="user-dropdown-item">Manage Competitions</a>
-            <a href="/settings" class="user-dropdown-item">Rubric & Criteria</a>
-            <a href="/audit" class="user-dropdown-item">Audit Verification</a>
-            {% endif %}
-
-            <div class="user-dropdown-divider"></div>
-            <a href="/profile" class="user-dropdown-item">Account & Security</a>
-            <a href="javascript:void(0)" onclick="openJoinModal()" class="user-dropdown-item">Enter Join Code</a>
-
-            <div class="user-dropdown-divider"></div>
-            <a href="/logout" class="user-dropdown-item" style="color:var(--alert-error-text);">
-              Sign Out →
-            </a>
           </div>
+        </a>
+      </div>
+      <a href="/logout" class="sidebar-nav-item" style="color:var(--alert-error-text);" title="Sign Out">
+        <div class="sidebar-icon-wrap">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </div>
-      {% else %}
-        <button onclick="openJoinModal()" class="btn btn-outline" style="padding:0.35rem 0.65rem; font-size:0.75rem;" title="Join Competition with Code">
-          Join Code
-        </button>
-        <a href="/login" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem;">
-          Sign In
-        </a>
-        <a href="/signup" class="btn btn-primary" style="padding:0.35rem 0.75rem; font-size:0.75rem;">
-          Register
-        </a>
-      {% endif %}
-
-      <button onclick="toggleTheme()" class="btn btn-outline" style="padding:0.35rem 0.55rem; font-size:0.75rem;" title="Toggle Dark/Light Mode">
-        ◐
-      </button>
-
-      <!-- Mobile Hamburger Toggle -->
-      <button type="button" class="mobile-toggle" onclick="toggleMobileDrawer()" aria-label="Toggle Navigation">
-        ☰
-      </button>
-    </div>
-  </nav>
-
-  <!-- Clean Mobile Drawer Menu -->
-  <div class="mobile-drawer" id="mobile-drawer">
-    {% if active_event %}
-    <div style="padding-bottom:0.75rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Current Event</span>
-      <a href="/competitions" class="nav-event-chip">
-        <span class="nav-event-dot"></span>
-        <span class="nav-event-text">{{ active_event.name }}</span>
+        <span class="sidebar-label">Sign Out</span>
       </a>
-    </div>
-    {% endif %}
-
-    <div style="display:flex; flex-direction:column; gap:0.4rem;">
-      <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.25rem;">Navigation</div>
-      {% if not user or user.role == 'visitor' %}
-        <a href="/competitions" class="btn btn-outline" style="justify-content:flex-start;">Competitions</a>
-        <a href="/projects" class="btn btn-outline" style="justify-content:flex-start;">Showcase Gallery</a>
-        <a href="/vote" class="btn btn-outline" style="justify-content:flex-start;">Community Ballot</a>
-        <a href="/audit" class="btn btn-outline" style="justify-content:flex-start;">Verification & Audit</a>
-      {% elif user.role == 'participant' %}
-        <a href="/participant/dashboard" class="btn btn-outline" style="justify-content:flex-start;">Dashboard</a>
-        <a href="/submit" class="btn btn-outline" style="justify-content:flex-start;">Submit Project</a>
-        <a href="/competitions" class="btn btn-outline" style="justify-content:flex-start;">Competitions</a>
-        <a href="/projects" class="btn btn-outline" style="justify-content:flex-start;">Showcase</a>
-      {% elif user.role == 'judge' %}
-        <a href="/judge" class="btn btn-outline" style="justify-content:flex-start;">Evaluation Queue</a>
-        <a href="/arena" class="btn btn-outline" style="justify-content:flex-start;">Pairwise Arena</a>
-        <a href="/competitions" class="btn btn-outline" style="justify-content:flex-start;">Competitions</a>
-      {% elif user.role in ('organizer', 'admin') %}
-        <a href="/war-room" class="btn btn-outline" style="justify-content:flex-start;">War Room</a>
-        <a href="/organizer/competitions" class="btn btn-outline" style="justify-content:flex-start;">Manage Competitions</a>
-        <a href="/settings" class="btn btn-outline" style="justify-content:flex-start;">Rubric & Parameters</a>
-        <a href="/arena" class="btn btn-outline" style="justify-content:flex-start;">Pairwise Arena</a>
-      {% endif %}
-    </div>
-
-    <div style="border-top:1px solid var(--border); padding-top:0.75rem; display:flex; flex-direction:column; gap:0.4rem;">
-      <button onclick="openJoinModal(); toggleMobileDrawer();" class="btn btn-primary" style="justify-content:center;">
-        + Join with Code
-      </button>
-
-      {% if user and user.role != 'visitor' %}
-        <a href="/profile" class="btn btn-outline" style="justify-content:center;">
-          Account & Security ({{ user.name }})
-        </a>
-        <a href="/logout" class="btn btn-outline" style="justify-content:center; color:var(--alert-error-text);">
-          Sign Out
-        </a>
       {% else %}
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
-          <a href="/login" class="btn btn-outline" style="justify-content:center;">Sign In</a>
-          <a href="/signup" class="btn btn-primary" style="justify-content:center;">Register</a>
+      <a href="/login" class="sidebar-nav-item" title="Sign In">
+        <div class="sidebar-icon-wrap">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
         </div>
+        <span class="sidebar-label">Sign In</span>
+      </a>
+      <a href="/signup" class="sidebar-nav-item" title="Register Account">
+        <div class="sidebar-icon-wrap">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        </div>
+        <span class="sidebar-label">Register</span>
+      </a>
       {% endif %}
     </div>
-  </div>
+  </aside>
 
-  <!-- Join Competition Modal -->
-  <div id="join-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center;">
-    <div class="card" style="max-width:440px; width:90%; padding:2rem; background:var(--bg-surface); border:1px solid var(--border-light); position:relative;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
-        <h3 style="font-family:var(--font-serif); font-size:1.4rem; margin:0;">Join Competition</h3>
-        <button onclick="closeJoinModal()" style="background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">&times;</button>
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
+  <!-- Primary Application Layout (Offset 64px on Desktop, Centered Content) -->
+  <div class="app-layout">
+    <!-- Primary Top Navbar -->
+    <nav class="navbar">
+      <div class="nav-left">
+        <a href="/projects" class="brand-wrapper" title="Veritas — Competitive Evaluation Platform">
+          <svg width="22" height="22" viewBox="0 0 34 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.048 37L1.21 27.57V10.8L16.83 1.06L32.88 10.43V27.2L17.28 36.93" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M17.48 20.42V27.61L25.2 23.05V15.78L17.48 20.42Z" fill="currentColor"/>
+          </svg>
+          <span class="brand-title">VERITAS</span>
+        </a>
+
+        <!-- Compact Active Competition Chip (Fixed Max-Width) -->
+        {% if active_event %}
+        <a href="/competitions" class="nav-event-chip" title="Active: {{ active_event.name }} (Click to switch)">
+          <span class="nav-event-dot"></span>
+          <span class="nav-event-text">{{ active_event.name }}</span>
+        </a>
+        {% endif %}
       </div>
-      <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1.25rem;">
-        Enter the unique 6-8 character competition code provided on your invitation or badge.
-      </p>
-      <form onsubmit="handleJoinCodeSubmit(event)">
-        <div style="margin-bottom:1.25rem;">
-          <label style="display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">
-            Competition Code
-          </label>
-          <input type="text" id="modal-join-code-input" class="input" style="width:100%; text-transform:uppercase; font-family:var(--font-mono); font-size:1.1rem; letter-spacing:0.1em; text-align:center;" placeholder="e.g. RAPTOR-2026" required />
-        </div>
-        <button type="submit" id="modal-join-btn" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.65rem;">
-          Join Competition →
+
+      <!-- Center Navigation Links (Concise, Distraction-Free, Priority-Sorted) -->
+      <div class="nav-center">
+        <ul class="nav-links">
+          {% if not user or user.role == 'visitor' %}
+            <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
+            <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
+            <li><a href="/vote" class="nav-link {% if active_page == 'vote' %}active{% endif %}">Ballot</a></li>
+            <li><a href="/audit" class="nav-link {% if active_page == 'audit' %}active{% endif %}">Audit</a></li>
+
+          {% elif user.role == 'participant' %}
+            <li><a href="/participant/dashboard" class="nav-link {% if active_page == 'participant_dash' %}active{% endif %}">Dashboard</a></li>
+            <li><a href="/submit" class="nav-link {% if active_page == 'submit' %}active{% endif %}">Submit</a></li>
+            <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
+            <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
+
+          {% elif user.role == 'judge' %}
+            <li><a href="/judge" class="nav-link {% if active_page == 'judge' %}active{% endif %}">Queue</a></li>
+            <li><a href="/arena" class="nav-link {% if active_page == 'arena' %}active{% endif %}">Arena</a></li>
+            <li><a href="/competitions" class="nav-link {% if active_page == 'competitions' %}active{% endif %}">Competitions</a></li>
+            <li><a href="/projects" class="nav-link {% if active_page == 'gallery' %}active{% endif %}">Showcase</a></li>
+
+          {% elif user.role in ('organizer', 'admin') %}
+            <li><a href="/war-room" class="nav-link {% if active_page == 'war_room' %}active{% endif %}">War Room</a></li>
+            <li><a href="/organizer/competitions" class="nav-link {% if active_page == 'org_competitions' %}active{% endif %}">Competitions</a></li>
+            <li><a href="/settings" class="nav-link {% if active_page == 'settings' %}active{% endif %}">Rubric</a></li>
+            <li><a href="/arena" class="nav-link {% if active_page == 'arena' %}active{% endif %}">Arena</a></li>
+          {% endif %}
+        </ul>
+      </div>
+
+      <!-- Right Navigation Controls -->
+      <div class="nav-right">
+        {% if user and user.role != 'visitor' %}
+          <!-- Compact User Account Dropdown -->
+          <div class="user-menu" id="nav-user-menu">
+            <button type="button" class="user-menu-btn" onclick="toggleUserDropdown(event)" aria-label="User Account Menu">
+              <span class="user-avatar-circle">{{ (user.name or user.role)[:1] | upper }}</span>
+              <span class="user-menu-name">{{ user.name.split()[0] if user.name else user.role }}</span>
+              <span class="badge {% if user.role == 'organizer' %}badge-emerald{% elif user.role == 'judge' %}badge-purple{% else %}badge-accent{% endif %}" style="font-size:0.62rem; padding:0.1rem 0.35rem; text-transform:uppercase;">
+                {{ user.role }}
+              </span>
+              <span style="font-size:0.65rem; color:var(--text-muted); margin-left:0.15rem;">▾</span>
+            </button>
+
+            <div class="user-dropdown" id="nav-user-dropdown">
+              <div class="user-dropdown-header">
+                <div style="font-weight:600; font-size:0.85rem; color:var(--text-primary);">{{ user.name }}</div>
+                <div style="font-size:0.72rem; color:var(--text-muted); font-family:var(--font-mono); text-overflow:ellipsis; overflow:hidden;">{{ user.email }}</div>
+              </div>
+              
+              {% if user.role == 'participant' %}
+              <a href="/participant/dashboard" class="user-dropdown-item">My Dashboard</a>
+              <a href="/submit" class="user-dropdown-item">Submit Project</a>
+              <a href="/participant/dashboard#team" class="user-dropdown-item">Team Roster</a>
+              <a href="/vote" class="user-dropdown-item">Community Ballot</a>
+              {% elif user.role == 'judge' %}
+              <a href="/judge" class="user-dropdown-item">Evaluation Queue</a>
+              <a href="/arena" class="user-dropdown-item">Pairwise Arena</a>
+              <a href="/audit" class="user-dropdown-item">Audit Verification</a>
+              {% elif user.role in ('organizer', 'admin') %}
+              <a href="/war-room" class="user-dropdown-item">War Room</a>
+              <a href="/organizer/competitions" class="user-dropdown-item">Manage Competitions</a>
+              <a href="/settings" class="user-dropdown-item">Rubric & Criteria</a>
+              <a href="/audit" class="user-dropdown-item">Audit Verification</a>
+              {% endif %}
+
+              <div class="user-dropdown-divider"></div>
+              <a href="/profile" class="user-dropdown-item">Account & Security</a>
+              <a href="javascript:void(0)" onclick="openJoinModal()" class="user-dropdown-item">Enter Join Code</a>
+
+              <div class="user-dropdown-divider"></div>
+              <a href="/logout" class="user-dropdown-item" style="color:var(--alert-error-text);">
+                Sign Out →
+              </a>
+            </div>
+          </div>
+        {% else %}
+          <button onclick="openJoinModal()" class="btn btn-outline" style="padding:0.35rem 0.65rem; font-size:0.75rem;" title="Join Competition with Code">
+            Join Code
+          </button>
+          <a href="/login" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem;">
+            Sign In
+          </a>
+          <a href="/signup" class="btn btn-primary" style="padding:0.35rem 0.75rem; font-size:0.75rem;">
+            Register
+          </a>
+        {% endif %}
+
+        <button onclick="toggleTheme()" class="btn btn-outline" style="padding:0.35rem 0.55rem; font-size:0.75rem;" title="Toggle Dark/Light Mode">
+          ◐
         </button>
-      </form>
-      <div id="modal-join-error" class="alert alert-error" style="display:none; margin-top:1rem;"></div>
+
+        <!-- Mobile Toggle (triggers app-sidebar on mobile) -->
+        <button type="button" class="mobile-toggle" onclick="toggleSidebar()" aria-label="Toggle Navigation">
+          ☰
+        </button>
+      </div>
+    </nav>
+
+    <!-- Join Competition Modal -->
+    <div id="join-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center;">
+      <div class="card" style="max-width:440px; width:90%; padding:2rem; background:var(--bg-surface); border:1px solid var(--border-light); position:relative;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+          <h3 style="font-family:var(--font-serif); font-size:1.4rem; margin:0;">Join Competition</h3>
+          <button onclick="closeJoinModal()" style="background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">&times;</button>
+        </div>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1.25rem;">
+          Enter the unique 6-8 character competition code provided on your invitation or badge.
+        </p>
+        <form onsubmit="handleJoinCodeSubmit(event)">
+          <div style="margin-bottom:1.25rem;">
+            <label style="display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.35rem;">
+              Competition Code
+            </label>
+            <input type="text" id="modal-join-code-input" class="input" style="width:100%; text-transform:uppercase; font-family:var(--font-mono); font-size:1.1rem; letter-spacing:0.1em; text-align:center;" placeholder="e.g. RAPTOR-2026" required />
+          </div>
+          <button type="submit" id="modal-join-btn" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.65rem;">
+            Join Competition →
+          </button>
+        </form>
+        <div id="modal-join-error" class="alert alert-error" style="display:none; margin-top:1rem;"></div>
+      </div>
     </div>
+
+    <!-- Main Content -->
+    <main class="container" style="min-height: calc(100vh - 180px); padding-top: 2rem; padding-bottom: 3rem;">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Clean Enterprise Footer -->
+    <footer class="footer" style="border-top:1px solid var(--border); padding:2rem 0; margin-top:4rem; text-align:center; font-size:0.8rem; color:var(--text-muted); background:var(--bg-surface);">
+      <div style="max-width:1100px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; padding:0 2rem;">
+        <div style="font-family:var(--font-mono); font-size:0.75rem;">
+          VERITAS // HIGH-INTEGRITY COMPETITIVE BENCHMARKING
+        </div>
+        <div style="display:flex; gap:1.5rem;">
+          <a href="/competitions" style="color:var(--text-muted); text-decoration:none;">Competitions</a>
+          <a href="/projects" style="color:var(--text-muted); text-decoration:none;">Showcase</a>
+          <a href="/audit" style="color:var(--text-muted); text-decoration:none;">Audit Verification</a>
+          <a href="/docs" target="_blank" style="color:var(--text-muted); text-decoration:none;">API Docs</a>
+          <a href="/login" style="color:var(--text-muted); text-decoration:none;">Switch Account</a>
+        </div>
+      </div>
+    </footer>
   </div>
-
-  <!-- Main Content -->
-  <main class="container" style="min-height: calc(100vh - 180px); padding-top: 2rem; padding-bottom: 3rem;">
-    {% block content %}{% endblock %}
-  </main>
-
-  <!-- Clean Enterprise Footer -->
-  <footer class="footer" style="border-top:1px solid var(--border); padding:2rem 0; margin-top:4rem; text-align:center; font-size:0.8rem; color:var(--text-muted); background:var(--bg-surface);">
-    <div style="max-width:1100px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; padding:0 2rem;">
-      <div style="font-family:var(--font-mono); font-size:0.75rem;">
-        VERITAS // HIGH-INTEGRITY COMPETITIVE BENCHMARKING
-      </div>
-      <div style="display:flex; gap:1.5rem;">
-        <a href="/competitions" style="color:var(--text-muted); text-decoration:none;">Competitions</a>
-        <a href="/projects" style="color:var(--text-muted); text-decoration:none;">Showcase</a>
-        <a href="/audit" style="color:var(--text-muted); text-decoration:none;">Audit Verification</a>
-        <a href="/docs" target="_blank" style="color:var(--text-muted); text-decoration:none;">API Docs</a>
-        <a href="/login" style="color:var(--text-muted); text-decoration:none;">Switch Account</a>
-      </div>
-    </div>
-  </footer>
 
   <script src="/static/js/app.js"></script>
   <script>
@@ -258,9 +437,15 @@
       if (d) d.classList.toggle('show');
     }
 
+    function toggleSidebar() {
+      const sidebar = document.getElementById('app-sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if (sidebar) sidebar.classList.toggle('mobile-open');
+      if (backdrop) backdrop.classList.toggle('active');
+    }
+
     function toggleMobileDrawer() {
-      const d = document.getElementById('mobile-drawer');
-      if (d) d.classList.toggle('open');
+      toggleSidebar();
     }
 
 
