@@ -6,12 +6,15 @@ from fastapi import APIRouter, Request, Response, HTTPException, Depends
 from pydantic import BaseModel
 from src.database import get_db, log_audit
 from src.core.auth import get_current_user, require_role, require_auth, UserPrincipal
+from src.core.security import hash_password, verify_password, generate_secure_token
+from src.core.qrcode import generate_offline_svg_qr
 
 router = APIRouter(tags=["auth_admin"])
 
 class InviteCreateRequest(BaseModel):
     role: str  # 'judge' or 'participant'
     email: Optional[str] = None
+    event_id: Optional[str] = None
     tracks: Optional[List[str]] = []
     team_id: Optional[str] = None
 
@@ -33,16 +36,18 @@ def create_invite(payload: InviteCreateRequest, user: UserPrincipal = Depends(re
     if payload.role not in ("judge", "participant"):
         raise HTTPException(status_code=400, detail="Role must be 'judge' or 'participant'")
 
-    token = f"inv_{secrets.token_urlsafe(12)}"
+    token = generate_secure_token("inv")
     now = datetime.now(timezone.utc).isoformat()
+    event_id = payload.event_id or "evt_01"
 
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        """INSERT INTO invitations (token, role, email, tracks, team_id, created_by, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        """INSERT INTO invitations (token, event_id, role, email, tracks, team_id, created_by, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             token,
+            event_id,
             payload.role,
             payload.email,
             json.dumps(payload.tracks or []),
@@ -54,13 +59,15 @@ def create_invite(payload: InviteCreateRequest, user: UserPrincipal = Depends(re
     conn.commit()
     conn.close()
 
-    log_audit("create_invite", user.id, token, f"Role: {payload.role}")
+    log_audit("create_invite", user.id, token, f"Role: {payload.role} for Event: {event_id}")
 
     return {
         "status": "success",
         "invite_token": token,
         "invite_url": f"/onboard/{token}",
+        "qr_url": f"/api/invitations/{token}/qr",
         "role": payload.role,
+        "event_id": event_id,
         "tracks": payload.tracks,
         "created_at": now
     }
@@ -75,6 +82,7 @@ def list_invites(user: UserPrincipal = Depends(require_role(["organizer", "admin
     for r in rows:
         r["tracks"] = json.loads(r["tracks"]) if r.get("tracks") else []
         r["invite_url"] = f"/onboard/{r['token']}"
+        r["qr_url"] = f"/api/invitations/{r['token']}/qr"
     return {"invitations": rows}
 
 @router.get("/api/organizer/users")
@@ -99,7 +107,8 @@ def reset_user_password(user_id: str, payload: PasswordResetRequest, user: UserP
         raise HTTPException(status_code=404, detail="User not found")
 
     new_pw = payload.new_password or "password123"
-    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (new_pw, user_id))
+    hashed_pw = hash_password(new_pw)
+    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (hashed_pw, user_id))
     conn.commit()
     conn.close()
 
@@ -129,6 +138,7 @@ def onboard_user(payload: OnboardRequest, response: Response):
     user_id = f"{prefix}_{secrets.token_hex(4)}"
     user_token = f"token_{secrets.token_hex(16)}"
     now = datetime.now(timezone.utc).isoformat()
+    hashed_pw = hash_password(payload.password.strip())
 
     cursor.execute(
         """INSERT INTO users (id, name, email, role, token, password, tracks)
@@ -139,9 +149,18 @@ def onboard_user(payload: OnboardRequest, response: Response):
             payload.email.strip(),
             inv["role"],
             user_token,
-            payload.password.strip(),
+            hashed_pw,
             inv["tracks"]
         )
+    )
+
+    # Event registration
+    event_id = inv["event_id"] or "evt_01"
+    cursor.execute(
+        """INSERT INTO event_registrations (event_id, user_id, role, joined_at)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(event_id, user_id) DO NOTHING""",
+        (event_id, user_id, inv["role"], now)
     )
 
     cursor.execute("UPDATE invitations SET used_at = ? WHERE token = ?", (now, payload.token))
@@ -158,7 +177,7 @@ def onboard_user(payload: OnboardRequest, response: Response):
     conn.commit()
     conn.close()
 
-    log_audit("onboard_user", user_id, inv["role"], f"User {payload.email} onboarded")
+    log_audit("onboard_user", user_id, inv["role"], f"User {payload.email} onboarded to {event_id}")
 
     response.set_cookie(key="session", value=user_token, path="/", httponly=False)
 
@@ -186,11 +205,12 @@ def change_password(payload: PasswordChangeRequest, user: UserPrincipal = Depend
         raise HTTPException(status_code=404, detail="User record not found")
 
     stored_pw = row["password"] or "password123"
-    if payload.old_password != stored_pw and payload.old_password != "password123":
+    if not verify_password(payload.old_password, stored_pw):
         conn.close()
         raise HTTPException(status_code=400, detail="Current password is incorrect.")
 
-    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (payload.new_password, user.id))
+    hashed_pw = hash_password(payload.new_password)
+    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (hashed_pw, user.id))
     conn.commit()
     conn.close()
 
