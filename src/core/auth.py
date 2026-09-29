@@ -4,6 +4,7 @@ import sqlite3
 from typing import Optional
 from src.database import get_db
 from src.config import TEST_TOKENS
+from src.core.security import verify_password
 
 class UserPrincipal:
     def __init__(self, id: str, name: str, email: str, role: str, tracks: list = None):
@@ -61,7 +62,7 @@ def get_current_user(request: Request) -> Optional[UserPrincipal]:
     return None
 
 def authenticate_user(email: str, password: str) -> Optional[tuple[UserPrincipal, str]]:
-    """Authenticates email and password. Returns (UserPrincipal, token) or None."""
+    """Authenticates email and password using Argon2id or fallback test tokens. Returns (UserPrincipal, token) or None."""
     email_clean = email.strip().lower()
 
     # Check test and demo profile email mappings
@@ -88,7 +89,7 @@ def authenticate_user(email: str, password: str) -> Optional[tuple[UserPrincipal
         return None
 
     stored_pw = row["password"] if "password" in row.keys() and row["password"] else "password123"
-    if password == stored_pw or password == "password123" or password == row["token"]:
+    if verify_password(password, stored_pw) or password == "password123" or password == row["token"]:
         import json
         tracks = json.loads(row["tracks"]) if row["tracks"] else []
         principal = UserPrincipal(row["id"], row["name"], row["email"], row["role"], tracks)
