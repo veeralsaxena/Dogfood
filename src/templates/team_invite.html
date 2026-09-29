@@ -1,78 +1,284 @@
 {% extends "base.html" %}
 
-{% block title %}Join Team Workspace — Veritas Platform{% endblock %}
+{% block title %}Join Team {{ team.name }} — Veritas Platform{% endblock %}
 
 {% block content %}
-<div style="margin-bottom:2rem; padding-top:1.5rem; text-align:center;">
-  <h1 style="font-size:2.2rem; margin:0 0 0.4rem 0; font-family:var(--font-serif);">Join Team {{ team.name }}</h1>
-  <p style="color:var(--text-muted); font-size:0.9rem; margin:0 auto; max-width:500px;">
-    You have been invited to collaborate with {{ team.name }}. Teams are permitted up to 4 members.
-  </p>
-</div>
+<div style="max-width:620px; margin:2.5rem auto;">
+  <div style="text-align:center; margin-bottom:2rem;">
+    <div class="serif-italic" style="color:var(--text-muted); font-size:1rem; margin-bottom:0.25rem;">[ TEAM COLLABORATION INVITATION ]</div>
+    <h1 style="font-size:2.4rem; margin-bottom:0.4rem; font-family:var(--font-serif);">Join {{ team.name }}</h1>
+    <p style="color:var(--text-muted); font-size:0.9rem; margin:0 auto; max-width:480px; line-height:1.5;">
+      You have been invited to collaborate with <strong>{{ team.name }}</strong> for <strong>{{ active_event.name if active_event else 'Hackathon 2026' }}</strong>.
+    </p>
+  </div>
 
-<div style="max-width:600px; margin:0 auto;">
-  <div class="card" style="padding:2rem; text-align:center;">
-    <div style="margin-bottom:1.5rem;">
-      <span class="badge badge-purple" style="font-size:0.85rem; padding:0.35rem 0.75rem;">TEAM ID: {{ team.id }}</span>
-      <h2 class="serif-heading" style="font-size:2rem; margin-top:0.75rem;">{{ team.name }}</h2>
+  <div class="card" style="padding:2.25rem; border:1px solid var(--border-light);">
+    <!-- Team Meta Banner -->
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1.5rem; padding-bottom:1.25rem; border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted);">Target Hackathon</div>
+        <div style="font-weight:700; font-size:1.05rem; color:var(--text-primary); margin-top:0.2rem;">
+          {{ active_event.name if active_event else 'Veritas Event' }}
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted);">Roster Capacity</div>
+        <div style="font-family:var(--font-mono); font-size:1.05rem; font-weight:700; color:{% if members|length >= 4 %}var(--alert-error-border){% else %}var(--emerald){% endif %}; margin-top:0.2rem;">
+          {{ members|length }} / 4 MEMBERS
+        </div>
+      </div>
     </div>
 
-    <div style="border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:1.25rem 0; margin-bottom:1.5rem; text-align:left;">
-      <h4 class="mono" style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.75rem;">Current Roster</h4>
-      <ul style="list-style:none; display:flex; flex-direction:column; gap:0.5rem;">
+    <!-- Active Roster -->
+    <div style="margin-bottom:1.75rem;">
+      <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.6rem;">
+        Active Team Roster
+      </div>
+      <div style="display:flex; flex-direction:column; gap:0.5rem;">
         {% for member in members %}
-          <li style="display:flex; justify-content:space-between; font-size:0.9rem;">
-            <span style="color:var(--text-primary);">{{ member }}</span>
-            <span class="badge badge-emerald">Active Member</span>
-          </li>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0.75rem; background:var(--bg-secondary); border:1px solid var(--border); border-radius:4px; font-size:0.85rem;">
+          <span style="color:var(--text-primary); font-family:var(--font-mono); font-size:0.8rem;">{{ member }}</span>
+          <span class="badge badge-emerald" style="font-size:0.68rem;">ACTIVE</span>
+        </div>
         {% endfor %}
-      </ul>
+      </div>
     </div>
 
-    <form onsubmit="handleJoin(event)">
-      <div style="margin-bottom:1.25rem; text-align:left;">
-        <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.35rem;">
-          YOUR EMAIL / IDENTIFIER
-        </label>
-        <input type="email" id="user-email" class="search-input" style="width:100%;" placeholder="you@example.org" required>
+    <!-- Join Flow Condition -->
+    {% if members|length >= 4 and not is_already_member %}
+      <div class="alert alert-error" style="margin-bottom:1.5rem;">
+        This team has reached its maximum roster capacity (4 members). No additional members can join.
+      </div>
+      <div style="text-align:center;">
+        <a href="/participant/dashboard" class="btn btn-outline" style="width:100%; justify-content:center;">
+          Return to Dashboard →
+        </a>
       </div>
 
-      <button type="submit" class="btn btn-primary" id="join-btn" style="width:100%; padding:0.75rem;">
-        Accept Invitation & Join {{ team.name }}
+    {% elif is_already_member %}
+      <div class="alert alert-info" style="margin-bottom:1.5rem; text-align:center;">
+        You are already an active member of <strong>{{ team.name }}</strong>!
+      </div>
+      <div style="text-align:center;">
+        <a href="/participant/dashboard?event={{ team.event_id if team.event_id else 'evt_02' }}" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem;">
+          Go to Team Workspace Dashboard →
+        </a>
+      </div>
+
+    {% elif user %}
+      <!-- Authenticated 1-Click Join -->
+      <div style="background:var(--bg-secondary); border:1px solid var(--border); padding:1.25rem; border-radius:6px; margin-bottom:1.5rem;">
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1rem; line-height:1.5;">
+          You are currently signed in as <strong>{{ user.name }}</strong> ({{ user.email }}). Clicking below will immediately add you to this team roster.
+        </div>
+        <button onclick="handleAuthenticatedJoin()" id="auth-join-btn" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem; font-size:0.95rem;">
+          Accept Invitation &amp; Join Team {{ team.name }} →
+        </button>
+      </div>
+
+    {% else %}
+      <!-- Unauthenticated Tabs: Register & Join OR Sign In & Join -->
+      <div style="margin-bottom:1.25rem; display:flex; border-bottom:1px solid var(--border);">
+        <button type="button" id="tab-signup-btn" onclick="switchTab('signup')" style="flex:1; padding:0.6rem; background:none; border:none; border-bottom:2px solid var(--accent); color:var(--text-primary); font-weight:600; font-size:0.85rem; cursor:pointer;">
+          Create Account &amp; Join
+        </button>
+        <button type="button" id="tab-login-btn" onclick="switchTab('login')" style="flex:1; padding:0.6rem; background:none; border:none; border-bottom:2px solid transparent; color:var(--text-muted); font-weight:600; font-size:0.85rem; cursor:pointer;">
+          Existing Account (Sign In &amp; Join)
+        </button>
+      </div>
+
+      <!-- Tab A: Register & Join -->
+      <form id="signup-join-form" onsubmit="handleSignupJoin(event)">
+        <div style="margin-bottom:1rem;">
+          <label style="display:block; font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-secondary); margin-bottom:0.35rem;">
+            Full Name
+          </label>
+          <input type="text" id="reg-name" required class="input" style="width:100%;" placeholder="e.g. Alex Rivera" />
+        </div>
+        <div style="margin-bottom:1rem;">
+          <label style="display:block; font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-secondary); margin-bottom:0.35rem;">
+            Email Address
+          </label>
+          <input type="email" id="reg-email" required class="input" style="width:100%;" placeholder="name@example.org" />
+        </div>
+        <div style="margin-bottom:1.25rem;">
+          <label style="display:block; font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-secondary); margin-bottom:0.35rem;">
+            Create Password
+          </label>
+          <input type="password" id="reg-password" required minlength="6" class="input" style="width:100%;" placeholder="Minimum 6 characters" />
+        </div>
+        <button type="submit" id="reg-btn" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem;">
+          Register Account &amp; Enter Team Workspace →
+        </button>
+      </form>
+
+      <!-- Tab B: Sign In & Join -->
+      <form id="login-join-form" onsubmit="handleLoginJoin(event)" style="display:none;">
+        <div style="margin-bottom:1rem;">
+          <label style="display:block; font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-secondary); margin-bottom:0.35rem;">
+            Email Address
+          </label>
+          <input type="email" id="login-email" required class="input" style="width:100%;" placeholder="name@example.org" />
+        </div>
+        <div style="margin-bottom:1.25rem;">
+          <label style="display:block; font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-secondary); margin-bottom:0.35rem;">
+            Password
+          </label>
+          <input type="password" id="login-password" required class="input" style="width:100%;" placeholder="Your password" />
+        </div>
+        <button type="submit" id="login-btn" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem;">
+          Sign In &amp; Enter Team Workspace →
+        </button>
+      </form>
+
+      <div id="join-error" class="alert alert-error" style="display:none; margin-top:1rem;"></div>
+    {% endif %}
+
+    <!-- Share Link Quick Copy -->
+    <div style="margin-top:2rem; padding-top:1.25rem; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+      <span style="font-size:0.75rem; color:var(--text-muted);">Shareable invitation link:</span>
+      <button onclick="copyCurrentLink()" class="btn btn-outline" style="font-size:0.75rem; padding:0.3rem 0.65rem;">
+        Copy Invitation Link 📋
       </button>
-    </form>
+    </div>
   </div>
 </div>
 
 <script>
-async function handleJoin(e) {
-  e.preventDefault();
-  const btn = document.getElementById('join-btn');
-  btn.innerHTML = 'Joining...';
-  btn.disabled = true;
+function switchTab(tab) {
+  const signupForm = document.getElementById('signup-join-form');
+  const loginForm = document.getElementById('login-join-form');
+  const tabSignup = document.getElementById('tab-signup-btn');
+  const tabLogin = document.getElementById('tab-login-btn');
+  const err = document.getElementById('join-error');
+  if (err) err.style.display = 'none';
 
-  const email = document.getElementById('user-email').value;
+  if (tab === 'signup') {
+    signupForm.style.display = 'block';
+    loginForm.style.display = 'none';
+    tabSignup.style.borderBottomColor = 'var(--accent)';
+    tabSignup.style.color = 'var(--text-primary)';
+    tabLogin.style.borderBottomColor = 'transparent';
+    tabLogin.style.color = 'var(--text-muted)';
+  } else {
+    signupForm.style.display = 'none';
+    loginForm.style.display = 'block';
+    tabLogin.style.borderBottomColor = 'var(--accent)';
+    tabLogin.style.color = 'var(--text-primary)';
+    tabSignup.style.borderBottomColor = 'transparent';
+    tabSignup.style.color = 'var(--text-muted)';
+  }
+}
+
+function copyCurrentLink() {
+  navigator.clipboard.writeText(window.location.href);
+  alert("Team invitation link copied to clipboard!");
+}
+
+async function handleAuthenticatedJoin() {
+  const btn = document.getElementById('auth-join-btn');
+  btn.disabled = true;
+  btn.innerText = 'Joining team...';
 
   try {
-    const res = await fetch(`/api/teams/join/{{ team.invite_code }}`, {
+    const res = await fetch('/api/teams/join/{{ team.invite_code }}', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email })
+      body: JSON.stringify({})
     });
 
-    if (res.ok) {
-      alert(`Success! You have joined team {{ team.name }}. Redirecting to submissions...`);
-      window.location.href = '/submit';
+    const data = await res.json();
+    if (res.ok && data.status === 'success') {
+      window.location.href = '/participant/dashboard?event={{ team.event_id if team.event_id else "evt_02" }}';
     } else {
-      const err = await res.json();
-      alert('Could not join team: ' + (err.detail || 'Error'));
-      btn.innerHTML = 'Accept Invitation';
+      alert('Could not join team: ' + (data.detail || 'Server error'));
       btn.disabled = false;
+      btn.innerText = 'Accept Invitation & Join Team {{ team.name }} →';
     }
   } catch (err) {
-    alert('Network error: ' + err);
-    btn.innerHTML = 'Accept Invitation';
+    alert('Network error: ' + err.message);
     btn.disabled = false;
+  }
+}
+
+async function handleSignupJoin(e) {
+  e.preventDefault();
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const err = document.getElementById('join-error');
+  const btn = document.getElementById('reg-btn');
+
+  err.style.display = 'none';
+  btn.disabled = true;
+  btn.innerText = 'Registering & Joining...';
+
+  try {
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: name,
+        email: email,
+        password: password,
+        team_invite_code: '{{ team.invite_code }}',
+        event_id: '{{ team.event_id if team.event_id else "evt_02" }}'
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.status === 'success') {
+      window.location.href = data.redirect_url || '/participant/dashboard?event={{ team.event_id if team.event_id else "evt_02" }}';
+    } else {
+      err.innerText = data.detail || 'Registration failed.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.innerText = 'Register Account & Enter Team Workspace →';
+    }
+  } catch (ex) {
+    err.innerText = 'Network error: ' + ex.message;
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.innerText = 'Register Account & Enter Team Workspace →';
+  }
+}
+
+async function handleLoginJoin(e) {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const err = document.getElementById('join-error');
+  const btn = document.getElementById('login-btn');
+
+  err.style.display = 'none';
+  btn.disabled = true;
+  btn.innerText = 'Signing In & Joining...';
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email,
+        password: password,
+        team_invite_code: '{{ team.invite_code }}'
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.status === 'success') {
+      window.location.href = data.redirect_url || '/participant/dashboard?event={{ team.event_id if team.event_id else "evt_02" }}';
+    } else {
+      err.innerText = data.detail || 'Sign in failed.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.innerText = 'Sign In & Enter Team Workspace →';
+    }
+  } catch (ex) {
+    err.innerText = 'Network error: ' + ex.message;
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.innerText = 'Sign In & Enter Team Workspace →';
   }
 }
 </script>

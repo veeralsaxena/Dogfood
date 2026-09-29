@@ -78,17 +78,31 @@
   </div>
 </div>
 
-<!-- Community Ballot Grid -->
-<div style="margin-bottom: 1.5rem; display:flex; justify-content:space-between; align-items:center;">
-  <h2 style="font-size:1.5rem;">Randomized Ballot Candidates</h2>
+<!-- Community Ballot Controls -->
+<div style="margin-bottom: 1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+  <div>
+    <h2 style="font-size:1.5rem; margin:0 0 0.25rem 0;">Randomized Ballot Candidates</h2>
+    <div style="font-size:0.85rem; color:var(--text-muted);">
+      <span id="ballot-counter">{{ projects|length }}</span> of {{ projects|length }} candidate hacks visible
+    </div>
+  </div>
   <button onclick="location.reload()" class="btn btn-outline" style="font-size:0.8rem; padding:0.4rem 0.8rem;">
     ↻ Re-Shuffle Order
   </button>
 </div>
 
-<div class="project-grid">
+<!-- Instant Search & Track Filter Bar -->
+<div class="card" style="padding:1rem; margin-bottom:1.75rem; background:var(--bg-secondary);">
+  <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+    <div style="flex:1; min-width:240px;">
+      <input type="text" id="ballot-search-input" oninput="filterBallot()" class="search-input" style="width:100%; font-size:0.9rem;" placeholder="Search candidate hacks by title, summary, or ID..." />
+    </div>
+  </div>
+</div>
+
+<div class="project-grid" id="ballot-grid">
   {% for p in projects %}
-  <div class="card" id="card-{{ p.id }}" style="display:flex; flex-direction:column; justify-content:space-between; {% if user_voted_project_id == p.id %}border-color:var(--emerald); background:rgba(16, 185, 129, 0.03);{% endif %}">
+  <div class="card ballot-card" id="card-{{ p.id }}" data-title="{{ p.title|lower }}" data-summary="{{ p.summary|lower }}" data-id="{{ p.id|lower }}" data-track="{{ (p.track_id or '')|lower }}" style="display:flex; flex-direction:column; justify-content:space-between; {% if user_voted_project_id == p.id %}border-color:var(--emerald); background:rgba(16, 185, 129, 0.03);{% endif %}">
     <div>
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
         <span class="badge">{{ p.track_id or 'General' }}</span>
@@ -182,6 +196,30 @@ async function castCommunityVote(projectId, btn) {
     btn.innerText = originalText;
     alert("Connection error: " + err.message);
   }
+}
+
+function filterBallot() {
+  const query = (document.getElementById('ballot-search-input').value || '').trim().toLowerCase();
+  const cards = document.querySelectorAll('.ballot-card');
+  let visibleCount = 0;
+
+  cards.forEach(card => {
+    const title = card.getAttribute('data-title') || '';
+    const summary = card.getAttribute('data-summary') || '';
+    const id = card.getAttribute('data-id') || '';
+    const track = card.getAttribute('data-track') || '';
+
+    const matches = !query || title.includes(query) || summary.includes(query) || id.includes(query) || track.includes(query);
+    if (matches) {
+      card.style.display = 'flex';
+      visibleCount++;
+    } else {
+      card.style.display = 'none';
+    }
+  });
+
+  const counter = document.getElementById('ballot-counter');
+  if (counter) counter.innerText = visibleCount;
 }
 </script>
 {% endblock %}

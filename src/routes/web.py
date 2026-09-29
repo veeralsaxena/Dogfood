@@ -627,17 +627,25 @@ def submit_view(request: Request, event: str = Query(None)):
 def team_join_view(request: Request, invite_code: str):
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM teams WHERE invite_code = ?", (invite_code,))
+    cursor.execute("SELECT * FROM teams WHERE invite_code = ?", (invite_code.strip(),))
     row = cursor.fetchone()
-    conn.close()
 
     if not row:
+        conn.close()
         raise HTTPException(status_code=404, detail="Team invitation not found or expired")
 
     team = dict(row)
     members = json.loads(team.get("members", "[]"))
     user = get_current_user(request)
-    active_event = get_active_event_context(request)
+    
+    event_row = None
+    if team.get("event_id"):
+        cursor.execute("SELECT * FROM events WHERE id = ?", (team["event_id"],))
+        event_row = cursor.fetchone()
+    conn.close()
+
+    active_event = dict(event_row) if event_row else get_active_event_context(request)
+    is_already_member = bool(user and any(user.email.lower() == str(m).lower() for m in members))
 
     return templates.TemplateResponse(
         request=request,
@@ -647,6 +655,7 @@ def team_join_view(request: Request, invite_code: str):
             "team": team,
             "members": members,
             "user": user,
+            "is_already_member": is_already_member,
             "active_event": active_event
         }
     )
@@ -802,6 +811,7 @@ class LoginRequest(BaseModel):
     email: str
     password: str
     join_code: Optional[str] = None
+    team_invite_code: Optional[str] = None
 
 @router.get("/login", response_class=HTMLResponse)
 def login_view(request: Request, join_code: str = Query(None)):
@@ -866,7 +876,31 @@ def auth_login(payload: LoginRequest, response: Response):
     principal, token = auth_result
     response.set_cookie(key="session", value=token, path="/", httponly=False)
 
-    if payload.join_code:
+    if payload.team_invite_code and payload.team_invite_code.strip():
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM teams WHERE invite_code = ?", (payload.team_invite_code.strip(),))
+        tm = cursor.fetchone()
+        if tm:
+            tm_members = json.loads(tm["members"]) if tm["members"] else []
+            if len(tm_members) < 4 and principal.email.lower() not in [m.lower() for m in tm_members]:
+                tm_members.append(principal.email.lower())
+                cursor.execute("UPDATE teams SET members = ? WHERE id = ?", (json.dumps(tm_members), tm["id"]))
+            if tm["event_id"]:
+                now = datetime.now(timezone.utc).isoformat()
+                cursor.execute(
+                    """INSERT INTO event_registrations (event_id, user_id, role, joined_at)
+                       VALUES (?, ?, ?, ?)
+                       ON CONFLICT(event_id, user_id) DO NOTHING""",
+                    (tm["event_id"], principal.id, "participant", now)
+                )
+            conn.commit()
+            conn.close()
+            redirect_url = f"/participant/dashboard?event={tm['event_id']}"
+        else:
+            conn.close()
+            redirect_url = "/participant/dashboard"
+    elif payload.join_code:
         redirect_url = f"/join/{payload.join_code}"
     elif principal.role == "participant":
         redirect_url = "/participant/dashboard"

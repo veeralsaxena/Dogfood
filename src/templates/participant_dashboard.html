@@ -306,16 +306,21 @@
 
       <div style="border-top:1px solid var(--border); padding-top:1rem;">
         <label style="display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.4rem;">
-          Shareable Invite Code
+          Shareable Team Credentials
         </label>
-        <div style="display:flex; gap:0.5rem;">
-          <input type="text" readonly value="{{ team.invite_code }}" id="invite-code-input" class="input" style="flex:1; font-family:var(--font-mono); font-size:0.85rem;" />
-          <button onclick="copyInviteCode()" class="btn btn-outline" style="font-size:0.8rem; padding:0.4rem 0.8rem;">
-            Copy
+        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+          <div style="display:flex; gap:0.5rem;">
+            <input type="text" readonly value="{{ team.invite_code }}" id="invite-code-input" class="input" style="flex:1; font-family:var(--font-mono); font-size:0.85rem;" />
+            <button onclick="copyInviteCode()" class="btn btn-outline" style="font-size:0.8rem; padding:0.4rem 0.8rem;">
+              Copy Code
+            </button>
+          </div>
+          <button onclick="copyDirectTeamLink('{{ team.invite_code }}')" class="btn btn-outline" style="width:100%; justify-content:center; font-size:0.8rem; padding:0.45rem;">
+            Copy Direct Invite Link 🔗
           </button>
         </div>
-        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem;">
-          Teammates can join via <a href="/team/join/{{ team.invite_code }}" style="color:var(--text-muted); text-decoration:underline;">/team/join/{{ team.invite_code }}</a>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.45rem;">
+          Teammates opening the direct link can join immediately or sign up directly into this team.
         </div>
       </div>
     </div>
@@ -360,6 +365,12 @@ function copyInviteCode() {
   input.select();
   navigator.clipboard.writeText(input.value);
   alert("Invite code copied to clipboard: " + input.value);
+}
+
+function copyDirectTeamLink(code) {
+  const url = window.location.origin + "/team/join/" + code;
+  navigator.clipboard.writeText(url);
+  alert("Direct team invitation link copied to clipboard:\n" + url);
 }
 
 async function handleCreateTeam(e) {

@@ -37,6 +37,7 @@ class SignupRequest(BaseModel):
     password: str
     event_id: Optional[str] = None
     join_code: Optional[str] = None
+    team_invite_code: Optional[str] = None
 
 @router.post("/api/auth/signup")
 def signup_user(payload: SignupRequest, response: Response):
@@ -66,6 +67,21 @@ def signup_user(payload: SignupRequest, response: Response):
         ev = cursor.fetchone()
         if ev:
             event_id = ev["id"]
+
+    # Check and join team if invite code provided
+    if payload.team_invite_code and payload.team_invite_code.strip():
+        cursor.execute("SELECT * FROM teams WHERE invite_code = ?", (payload.team_invite_code.strip(),))
+        tm = cursor.fetchone()
+        if tm:
+            tm_members = json.loads(tm["members"]) if tm["members"] else []
+            if len(tm_members) >= 4:
+                conn.close()
+                raise HTTPException(status_code=400, detail="Team is already full (maximum 4 members)")
+            if email not in [m.lower() for m in tm_members]:
+                tm_members.append(email)
+                cursor.execute("UPDATE teams SET members = ? WHERE id = ?", (json.dumps(tm_members), tm["id"]))
+            if tm["event_id"]:
+                event_id = tm["event_id"]
 
     user_id = f"prt_{secrets.token_hex(4)}"
     user_token = f"token_{secrets.token_hex(16)}"
