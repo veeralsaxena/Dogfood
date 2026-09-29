@@ -15,7 +15,7 @@ def _send_http_request(url: str, payload_bytes: bytes, content_type: str = "appl
             data=payload_bytes,
             headers={
                 "Content-Type": content_type,
-                "User-Agent": "Veritas-Hackathon-Engine/2.0 (+https://github.com/veeralsaxena/Dogfood)"
+                "User-Agent": "Veritas-Hackathon-Engine/2.0 (+https://github.com/veeralsaxena/veritas)"
             },
             method="POST"
         )

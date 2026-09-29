@@ -1,4 +1,4 @@
-# Veritas · Hackathon Raptors Dogfood Platform
+# Veritas
 
 > An open-source, air-gapped, cryptographically verifiable hackathon submission & judging platform designed to evaluate engineering hackathons without trusting the host.
 
