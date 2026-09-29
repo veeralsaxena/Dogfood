@@ -28,7 +28,8 @@ def init_db():
         join_code TEXT,
         banner_url TEXT,
         prize_pool TEXT,
-        branding TEXT
+        branding TEXT,
+        webhook_url TEXT
     );
 
     CREATE TABLE IF NOT EXISTS tracks (
@@ -158,6 +159,7 @@ def init_db():
         ("events", "banner_url", "TEXT"),
         ("events", "prize_pool", "TEXT"),
         ("events", "branding", "TEXT"),
+        ("events", "webhook_url", "TEXT"),
         ("tracks", "event_id", "TEXT"),
         ("teams", "event_id", "TEXT"),
         ("projects", "event_id", "TEXT"),

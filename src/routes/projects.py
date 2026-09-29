@@ -123,6 +123,18 @@ def submit_project(project: ProjectCreate, request: Request):
     conn.close()
 
     log_audit("PROJECT_SUBMITTED", user.email, new_id, project.title)
+    try:
+        from src.core.webhooks import dispatch_webhook
+        dispatch_webhook("project.submitted", {
+            "title": project.title,
+            "summary": project.summary,
+            "repo_url": project.repo_url,
+            "demo_url": project.demo_url,
+            "track_name": valid_track_id,
+            "project_id": new_id
+        }, event_id=target_event_id)
+    except Exception:
+        pass
     return {"id": new_id, "title": project.title, "status": "submitted"}
 
 @router.get("/{project_id}")
@@ -189,6 +201,16 @@ def create_team(payload: TeamCreateRequest, request: Request):
     conn.commit()
     conn.close()
     log_audit("TEAM_CREATED", user.email, team_id, f"Created team {team_name} for {event_id}")
+    try:
+        from src.core.webhooks import dispatch_webhook
+        dispatch_webhook("team.created", {
+            "team_name": team_name,
+            "creator_email": user.email,
+            "invite_code": invite_code,
+            "event_id": event_id
+        }, event_id=event_id)
+    except Exception:
+        pass
     return {
         "status": "success",
         "team": {
@@ -250,6 +272,16 @@ def join_team_by_code(request: Request, invite_code: Optional[str] = None, body:
     conn.commit()
     conn.close()
     log_audit("TEAM_JOINED", email, row["id"], f"Joined team {row['name']}")
+    try:
+        from src.core.webhooks import dispatch_webhook
+        dispatch_webhook("team.joined", {
+            "team_name": row["name"],
+            "member_email": email,
+            "roster_count": len(members),
+            "event_id": row["event_id"]
+        }, event_id=row["event_id"])
+    except Exception:
+        pass
     return {"status": "success", "team_id": row["id"], "team_name": row["name"], "event_id": row["event_id"], "members": members}
 
 @team_router.post("/leave")
@@ -290,6 +322,7 @@ def update_event_settings(settings: dict, user: UserPrincipal = Depends(require_
     close_ts = settings.get("submissions_close")
     weights = settings.get("weights")
     weights_json = json.dumps(weights) if weights else None
+    webhook_url = settings.get("webhook_url")
 
     if name:
         cursor.execute("UPDATE events SET name = ?", (name,))
@@ -297,11 +330,27 @@ def update_event_settings(settings: dict, user: UserPrincipal = Depends(require_
         cursor.execute("UPDATE events SET submissions_close = ?", (close_ts,))
     if weights_json:
         cursor.execute("UPDATE events SET weights = ?", (weights_json,))
+    if webhook_url is not None:
+        cursor.execute("UPDATE events SET webhook_url = ?", (webhook_url.strip(),))
 
     conn.commit()
     conn.close()
 
     log_audit("EVENT_SETTINGS_UPDATED", user.email, "evt_01", f"Updated settings: {settings}")
     return {"status": "updated", "settings": settings}
+
+@event_router.post("/webhook/test")
+def test_event_webhook(payload: dict, user: UserPrincipal = Depends(require_auth)):
+    if user.role not in ("organizer", "admin"):
+        raise HTTPException(status_code=403, detail="Forbidden: Only organizers can test webhooks")
+    url = payload.get("webhook_url")
+    if not url:
+        raise HTTPException(status_code=400, detail="webhook_url is required")
+    from src.core.webhooks import dispatch_webhook
+    dispatch_webhook("test.ping", {
+        "message": "Test ping from Veritas Operations Command Center",
+        "sender": user.email
+    }, endpoint_url=url)
+    return {"status": "dispatched", "webhook_url": url}
 
 

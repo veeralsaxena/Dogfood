@@ -116,4 +116,13 @@ def submit_score(score: ScoreCreate, user: UserPrincipal = Depends(require_auth)
     conn.close()
 
     log_audit("SCORE_SUBMITTED", user.email, score.project_id, f"Criteria: {criteria_json}")
+    try:
+        from src.core.webhooks import dispatch_webhook
+        dispatch_webhook("score.submitted", {
+            "project_id": score.project_id,
+            "judge_id": user.id,
+            "comment": score.comment or ""
+        })
+    except Exception:
+        pass
     return {"status": "success", "project_id": score.project_id}

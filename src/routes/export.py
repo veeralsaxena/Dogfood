@@ -115,6 +115,15 @@ def publish_results(user: UserPrincipal = Depends(require_auth)):
     conn.close()
 
     log_audit("RESULTS_PUBLISHED_AND_SIGNED", user.email, "evt_01", f"Signature: {sig_hex[:16]}...")
+    try:
+        from src.core.webhooks import dispatch_webhook
+        dispatch_webhook("results.published", {
+            "event_id": "evt_01",
+            "project_count": len(ranked_items),
+            "signature_preview": sig_hex[:16] + "..."
+        }, event_id="evt_01")
+    except Exception:
+        pass
     return {
         "status": "published",
         "signature": sig_hex,

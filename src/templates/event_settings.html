@@ -97,12 +97,12 @@
       Dispatches real-time JSON payloads to Discord, Slack, or continuous integration runners upon project submission, judge scoring, and publication.
     </p>
 
-    <div style="display:flex; gap:0.75rem; margin-bottom:1rem;">
-      <input type="url" id="webhook_url" class="search-input" style="flex:1;" placeholder="https://discord.com/api/webhooks/... or https://hooks.slack.com/...">
-      <button onclick="testWebhook()" class="btn btn-outline">Dispatch Test Ping</button>
+    <div style="display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap;">
+      <input type="url" id="webhook_url" class="search-input" style="flex:1; min-width:280px;" value="{{ event.webhook_url or '' }}" placeholder="https://discord.com/api/webhooks/... or https://hooks.slack.com/...">
+      <button type="button" onclick="testWebhook(event)" class="btn btn-outline" id="btn-test-webhook">Dispatch Test Ping</button>
     </div>
     <span class="mono" style="font-size:0.75rem; color:var(--emerald);">
-      ✓ Webhook engine active (capturing submission, scoring, and publication events)
+      Active outbound webhook engine (Dispatches project submissions, team formations, scoring events, and final publications)
     </span>
   </div>
 </div>
@@ -116,6 +116,7 @@ async function saveEventSettings() {
   const payload = {
     name: document.getElementById('event_name').value,
     submissions_close: document.getElementById('submissions_close').value,
+    webhook_url: document.getElementById('webhook_url').value.trim(),
     weights: {
       functionality: parseFloat(document.getElementById('w_func').value),
       quality: parseFloat(document.getElementById('w_qual').value),
@@ -138,8 +139,8 @@ async function saveEventSettings() {
     });
 
     if (res.ok) {
-      alert('Event parameters & rubric weights updated successfully!');
-      btn.innerHTML = '✓ Saved';
+      alert('Event parameters, rubric weights, and Discord webhook saved successfully!');
+      btn.innerHTML = 'Saved';
     } else {
       const err = await res.json();
       alert('Error updating configuration: ' + (err.detail || 'Failed'));
@@ -151,8 +152,31 @@ async function saveEventSettings() {
   }
 }
 
-function testWebhook() {
-  alert('Webhook test event dispatched: { event: "TEST_PING", status: 200 }');
+async function testWebhook(e) {
+  const url = document.getElementById('webhook_url').value.trim();
+  if (!url) {
+    alert('Please enter a Discord Webhook URL first (e.g. https://discord.com/api/webhooks/...)');
+    return;
+  }
+  const btn = document.getElementById('btn-test-webhook');
+  btn.innerText = 'Dispatching...';
+  try {
+    const res = await fetch('/api/event/webhook/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ webhook_url: url })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert('Test ping dispatched to Discord! Check your Discord channel for the incoming Veritas event embed.');
+    } else {
+      alert('Error: ' + (data.detail || 'Failed to dispatch webhook'));
+    }
+  } catch (err) {
+    alert('Network error: ' + err.message);
+  } finally {
+    btn.innerText = 'Dispatch Test Ping';
+  }
 }
 </script>
 {% endblock %}
