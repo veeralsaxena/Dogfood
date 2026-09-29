@@ -454,7 +454,7 @@ def seed_database():
 
     log_audit("DATABASE_SEEDED", "system", "all", "Loaded fixtures.json and seeded multi-competition environment")
 
-    print("""
+    print(f"""
 ================================================================================
                     VERITAS PLATFORM — SEEDED CREDENTIALS
 ================================================================================
@@ -466,16 +466,21 @@ def seed_database():
  Judge       ada@example.org           password123   Track: Developer Tools
  Judge       judge_b@example.org       password123   Track: Infrastructure
 --------------------------------------------------------------------------------
+seeded. test logins:
+  organizer    Authorization: Token {TEST_TOKENS['organizer']}
+  judge_a      Authorization: Token {TEST_TOKENS['judge_a']}
+  judge_b      Authorization: Token {TEST_TOKENS['judge_b']}
+  participant  Authorization: Token {TEST_TOKENS['participant']}
+--------------------------------------------------------------------------------
  Active Competition Join Codes:
    • evt_01: SAMPLE-2026 (Sample Hack 2026 - Official Fixture Event)
    • evt_02: RAPTOR-2026 (Raptors AI & Systems Challenge 2026 - Open Live)
    • evt_03: MIT-2026    (MIT TechFair AI Grand Prix 2026 - Institutional Portal)
    • evt_04: SPEED-2026  (Speed Demon 2026 — Every Millisecond Is a Soul)
    • evt_05: ZERO-2026   (Zero Dependency 2026 — Ship With an Empty Manifest)
- Institutional White-Label Portals:
-   • Veritas Benchmark:  http://localhost:8080/org/sample-hack-2026
-   • Raptors Fellowship: http://localhost:8080/org/raptors-ai-2026
-   • MIT TechFair:       http://localhost:8080/org/mit-techfair-2026
+   • evt_06: RESURRECT-2026 (Code Resurrection 2026 — Port Mortem)
+   • evt_07: OLYMPIC-2026 (Code Olympics 2026 — Elite Programming Championship)
+   • evt_08: NOSLOP-2026 (AI Slop Scan Hackathon — Catch Low-Effort Content)
 ================================================================================
 """)
 
