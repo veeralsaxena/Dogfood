@@ -210,7 +210,7 @@ async function updateEventStatus(eventId, newStatus) {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Token organizer0000000000000000000000000000000'
+        'Authorization': localStorage.getItem('auth_token') || 'Token organizer0000000000000000000000000000000'
       },
       body: JSON.stringify({ status: newStatus })
     });
@@ -249,7 +249,7 @@ async function handleCreateCompetition(e) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Token organizer0000000000000000000000000000000'
+        'Authorization': localStorage.getItem('auth_token') || 'Token organizer0000000000000000000000000000000'
       },
       body: JSON.stringify({
         name: name,

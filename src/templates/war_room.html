@@ -204,9 +204,14 @@
           ✓ Invitation Generated
         </div>
         <input type="text" readonly id="generated-url-input" class="input" style="width:100%; font-family:var(--font-mono); font-size:0.8rem; margin-bottom:0.5rem;" />
-        <button onclick="copyGeneratedUrl()" class="btn btn-outline" style="width:100%; justify-content:center; font-size:0.8rem; padding:0.4rem;">
-          Copy Onboarding Link
-        </button>
+        <div style="display:flex; gap:0.5rem;">
+          <button onclick="copyGeneratedUrl()" class="btn btn-outline" style="flex:1; justify-content:center; font-size:0.8rem; padding:0.4rem;">
+            Copy Link
+          </button>
+          <button id="view-invite-qr-btn" onclick="showInviteQR(lastGeneratedToken, lastGeneratedRole)" class="btn btn-primary" style="flex:1; justify-content:center; font-size:0.8rem; padding:0.4rem;">
+            📱 View QR
+          </button>
+        </div>
       </div>
     </div>
 
@@ -238,11 +243,15 @@
                     <span class="badge badge-emerald">Active</span>
                   {% endif %}
                 </td>
-                <td>
                   {% if not inv.used_at %}
-                    <button onclick="navigator.clipboard.writeText(window.location.origin + '/onboard/{{ inv.token }}'); alert('Link copied!');" class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:0.75rem;">
-                      Copy
-                    </button>
+                    <div style="display:flex; gap:0.35rem;">
+                      <button onclick="navigator.clipboard.writeText(window.location.origin + '/onboard/{{ inv.token }}'); alert('Link copied!');" class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:0.75rem;">
+                        Copy
+                      </button>
+                      <button onclick="showInviteQR('{{ inv.token }}', '{{ inv.role }}')" class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:0.75rem;">
+                        📱 QR
+                      </button>
+                    </div>
                   {% else %}
                     <span style="color:var(--text-muted); font-size:0.75rem;">Used</span>
                   {% endif %}
@@ -290,10 +299,72 @@
   </div>
 </div>
 
+<!-- QR Code Display Modal -->
+<div id="qr-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center;">
+  <div class="card" style="max-width:380px; width:90%; padding:2rem; background:var(--bg-surface); border:1px solid var(--border-light); text-align:center;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <h3 id="qr-modal-title" style="font-family:var(--font-serif); font-size:1.25rem; margin:0;">Onboarding QR Code</h3>
+      <button onclick="closeQRModal()" style="background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">&times;</button>
+    </div>
+    
+    <div id="qr-code-container" style="background:#ffffff; padding:1.25rem; border-radius:8px; margin-bottom:1rem; display:flex; justify-content:center; align-items:center; min-height:220px;">
+    </div>
+
+    <div style="font-family:var(--font-mono); font-size:0.85rem; margin-bottom:1rem;">
+      Role: <strong id="qr-modal-role" style="color:var(--accent); text-transform:uppercase;"></strong>
+    </div>
+
+    <div style="display:flex; gap:0.5rem; justify-content:center;">
+      <button onclick="copyCurrentQRUrl()" class="btn btn-primary" style="font-size:0.8rem; padding:0.4rem 0.85rem;">
+        Copy Link
+      </button>
+      <button onclick="closeQRModal()" class="btn btn-outline" style="font-size:0.8rem; padding:0.4rem 0.85rem;">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
+let lastGeneratedToken = '';
+let lastGeneratedRole = '';
+let currentQRUrl = '';
+
 function toggleTrackSelect() {
   const role = document.getElementById('invite-role').value;
   document.getElementById('track-select-group').style.display = role === 'judge' ? 'block' : 'none';
+}
+
+async function showInviteQR(token, role) {
+  if (!token) return;
+  document.getElementById('qr-modal-title').innerText = `${role.toUpperCase()} Onboarding Badge`;
+  document.getElementById('qr-modal-role').innerText = role;
+  const container = document.getElementById('qr-code-container');
+  container.innerHTML = '<span style="color:#000; font-size:0.85rem;">Generating Vector QR...</span>';
+  
+  currentQRUrl = window.location.origin + '/onboard/' + token;
+  document.getElementById('qr-modal').style.display = 'flex';
+
+  try {
+    const res = await fetch(`/api/invitations/${token}/qr`);
+    if (res.ok) {
+      const svg = await res.text();
+      container.innerHTML = svg;
+    } else {
+      container.innerHTML = '<span style="color:#000;">Could not generate QR code</span>';
+    }
+  } catch (e) {
+    container.innerHTML = '<span style="color:#000;">Error: ' + e.message + '</span>';
+  }
+}
+
+function closeQRModal() {
+  document.getElementById('qr-modal').style.display = 'none';
+}
+
+function copyCurrentQRUrl() {
+  navigator.clipboard.writeText(currentQRUrl);
+  alert('Onboarding link copied to clipboard:\n' + currentQRUrl);
 }
 
 async function handleGenerateInvite(e) {
@@ -313,7 +384,7 @@ async function handleGenerateInvite(e) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Token organizer0000000000000000000000000000000'
+        'Authorization': localStorage.getItem('auth_token') || 'Token organizer0000000000000000000000000000000'
       },
       body: JSON.stringify({
         role: role,
@@ -324,6 +395,8 @@ async function handleGenerateInvite(e) {
 
     const data = await res.json();
     if (res.ok && data.status === 'success') {
+      lastGeneratedToken = data.invite_token;
+      lastGeneratedRole = data.role;
       const fullUrl = window.location.origin + data.invite_url;
       document.getElementById('generated-url-input').value = fullUrl;
       document.getElementById('invite-result').style.display = 'block';
@@ -354,7 +427,7 @@ async function resetPassword(userId, email) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Token organizer0000000000000000000000000000000'
+        'Authorization': localStorage.getItem('auth_token') || 'Token organizer0000000000000000000000000000000'
       },
       body: JSON.stringify({ new_password: 'password123' })
     });
@@ -378,7 +451,7 @@ async function publishResults() {
     const res = await fetch('/api/export/publish', {
       method: 'POST',
       headers: {
-        'Authorization': 'Token organizer0000000000000000000000000000000'
+        'Authorization': localStorage.getItem('auth_token') || 'Token organizer0000000000000000000000000000000'
       }
     });
 
