@@ -67,14 +67,36 @@ def submit_project(project: ProjectCreate, request: Request):
     import uuid
     new_id = f"prj_{uuid.uuid4().hex[:6]}"
     now_iso = datetime.now(timezone.utc).isoformat()
+
+    valid_team_id = None
+    if project.team_id:
+        cursor.execute("SELECT id FROM teams WHERE id = ?", (project.team_id,))
+        if cursor.fetchone():
+            valid_team_id = project.team_id
+
+    valid_track_id = None
+    if project.track_id:
+        cursor.execute("SELECT id FROM tracks WHERE id = ?", (project.track_id,))
+        if cursor.fetchone():
+            valid_track_id = project.track_id
+    if not valid_track_id:
+        cursor.execute("SELECT id FROM tracks WHERE event_id = ? LIMIT 1", (target_event_id,))
+        tr_row = cursor.fetchone()
+        if tr_row:
+            valid_track_id = tr_row["id"]
+        else:
+            cursor.execute("SELECT id FROM tracks LIMIT 1")
+            fallback_tr = cursor.fetchone()
+            valid_track_id = fallback_tr["id"] if fallback_tr else None
+
     cursor.execute(
         """INSERT INTO projects (id, event_id, team_id, track_id, title, summary, description, repo_url, demo_url, submitted_at, is_draft)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             new_id,
             target_event_id,
-            project.team_id or "tm_user",
-            project.track_id or "trk_01",
+            valid_team_id,
+            valid_track_id,
             project.title,
             project.summary or "",
             project.description or "",

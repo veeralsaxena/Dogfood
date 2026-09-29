@@ -18,17 +18,28 @@
 </div>
 
 <div style="max-width:800px; margin:0 auto;">
-  <!-- Countdown Timer -->
-  <div class="card" style="margin-bottom:2rem; background:var(--bg-secondary); border-left:3px solid var(--accent); padding:1.25rem;">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
+  <!-- Competition & Countdown Status Banner -->
+  <div class="card" style="margin-bottom:2rem; background:var(--bg-secondary); border-left:3px solid {% if event.submissions_close > now_iso %}var(--emerald){% else %}var(--amber){% endif %}; padding:1.25rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
       <div>
-        <span class="mono" style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Submissions Window</span>
-        <div style="font-weight:600; font-size:1.1rem; color:var(--text-primary); margin-top:0.25rem;">
-          Event Deadline: {{ event.submissions_close }}
+        <span class="mono" style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Selected Competition</span>
+        <div style="font-weight:700; font-size:1.2rem; color:var(--text-primary); margin-top:0.25rem;">
+          {{ event.name }}
+        </div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:0.2rem;">
+          Deadline: <strong style="font-family:var(--font-mono);">{{ event.submissions_close }}</strong>
         </div>
       </div>
-      <div id="deadline-badge" class="badge badge-amber" style="font-size:0.85rem; padding:0.4rem 0.8rem;">
-        STATUS: ENFORCED
+      <div>
+        {% if event.submissions_close > now_iso %}
+          <span class="badge badge-emerald" style="font-size:0.85rem; padding:0.4rem 0.8rem;">
+            ● STATUS: OPEN FOR SUBMISSION
+          </span>
+        {% else %}
+          <span class="badge badge-amber" style="font-size:0.85rem; padding:0.4rem 0.8rem;">
+            ● STATUS: DEADLINE PASSED (CLOSED)
+          </span>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -36,11 +47,28 @@
   <!-- Submission Form -->
   <div class="card" style="padding:2rem;">
     <form id="submission-form" onsubmit="handleSubmit(event)">
+      <!-- Target Competition Selector -->
+      <div style="margin-bottom:1.5rem;">
+        <label class="mono" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.5rem;">
+          TARGET COMPETITION / HACKATHON *
+        </label>
+        <select id="event_select" class="search-input" style="width:100%; font-size:0.95rem; font-family:var(--font-mono);" onchange="window.location.href='/submit?event=' + this.value">
+          {% for e in all_events %}
+            <option value="{{ e.id }}" {% if e.id == event.id %}selected{% endif %}>
+              {{ e.name }} — Deadline: {{ e.submissions_close[:10] }} {% if e.submissions_close > now_iso %}(🟢 OPEN){% else %}(🔴 CLOSED){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.35rem;">
+          You can switch competitions anytime to submit to an active hackathon.
+        </div>
+      </div>
+
       <div style="margin-bottom:1.5rem;">
         <label class="mono" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.5rem;">
           PROJECT TITLE *
         </label>
-        <input type="text" id="title" class="search-input" style="width:100%; font-size:1rem;" placeholder="e.g. Quiet Hours" required>
+        <input type="text" id="title" class="search-input" style="width:100%; font-size:1rem;" placeholder="e.g. Chronos Autonomous Pipeline" required>
       </div>
 
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
@@ -117,8 +145,11 @@ async function handleSubmit(e) {
   btn.innerHTML = 'Submitting...';
   btn.disabled = true;
 
+  const eventSelect = document.getElementById('event_select');
+  const eventId = eventSelect ? eventSelect.value : '{{ event.id if event else "evt_01" }}';
+
   const payload = {
-    event_id: '{{ event.id if event else "evt_01" }}',
+    event_id: eventId,
     title: document.getElementById('title').value,
     track_id: document.getElementById('track_id').value,
     team_id: document.getElementById('team_id').value,
@@ -143,7 +174,7 @@ async function handleSubmit(e) {
     if (res.ok) {
       const data = await res.json();
       alert(`Success! Project "${data.title}" successfully recorded in system.`);
-      window.location.href = '/projects';
+      window.location.href = '/projects?event=' + eventId;
     } else {
       const err = await res.json();
       alert(`Submission Refused: ${err.detail || 'Deadline expired or authorization missing.'}`);

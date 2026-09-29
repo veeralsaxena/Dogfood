@@ -418,11 +418,24 @@ def audit_view(request: Request):
 
 @router.get("/submit", response_class=HTMLResponse)
 def submit_view(request: Request, event: str = Query(None)):
-    active_event = get_active_event_context(request, event)
+    all_events = get_all_events()
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    # If no event is explicitly requested in query, default to an open competition (where deadline > now)
+    if not event:
+        open_events = [e for e in all_events if e.get("submissions_close", "") > now_iso]
+        if open_events:
+            active_event = open_events[0]
+        else:
+            active_event = get_active_event_context(request, event)
+    else:
+        active_event = get_active_event_context(request, event)
+
     conn = get_db()
     cursor = conn.cursor()
     
-    track_query = "SELECT id, name FROM tracks"
+    # Fetch tracks for the active event
+    track_query = "SELECT id, event_id, name FROM tracks"
     track_params = []
     if active_event:
         track_query += " WHERE event_id = ?"
@@ -431,7 +444,7 @@ def submit_view(request: Request, event: str = Query(None)):
     cursor.execute(track_query, track_params)
     tracks = [dict(r) for r in cursor.fetchall()]
     if not tracks:
-        cursor.execute("SELECT id, name FROM tracks ORDER BY id ASC")
+        cursor.execute("SELECT id, event_id, name FROM tracks ORDER BY id ASC LIMIT 8")
         tracks = [dict(r) for r in cursor.fetchall()]
 
     cursor.execute("SELECT id, name FROM teams ORDER BY id ASC")
@@ -439,7 +452,6 @@ def submit_view(request: Request, event: str = Query(None)):
     conn.close()
 
     user = get_current_user(request)
-    all_events = get_all_events()
 
     return templates.TemplateResponse(
         request=request,
@@ -451,7 +463,8 @@ def submit_view(request: Request, event: str = Query(None)):
             "teams": teams,
             "user": user,
             "active_event": active_event,
-            "all_events": all_events
+            "all_events": all_events,
+            "now_iso": now_iso
         }
     )
 
