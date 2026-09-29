@@ -26,7 +26,7 @@
   <div class="card" style="padding:1.25rem;">
     <span class="mono" style="color:var(--text-muted); font-size:0.75rem;">SUBMISSIONS</span>
     <h2 class="serif-heading" style="font-size:2rem; margin:0.35rem 0;">{{ stats.total_projects }}</h2>
-    <span class="badge badge-emerald">40 Canonical (1 Duplicate Merged)</span>
+    <span class="badge badge-emerald">40 Canonical Projects</span>
   </div>
   <div class="card" style="padding:1.25rem;">
     <span class="mono" style="color:var(--text-muted); font-size:0.75rem;">PANEL JUDGES</span>
@@ -34,38 +34,45 @@
     <span class="badge badge-purple">Active across 8 tracks</span>
   </div>
   <div class="card" style="padding:1.25rem;">
-    <span class="mono" style="color:var(--text-muted); font-size:0.75rem;">EVALUATIONS LOGGED</span>
+    <span class="mono" style="color:var(--text-muted); font-size:0.75rem;">JUDGE EVALUATIONS</span>
     <h2 class="serif-heading" style="font-size:2rem; margin:0.35rem 0;">{{ stats.total_scores }}</h2>
     <span class="badge badge-amber">Coverage: 2-5 reviews/project</span>
   </div>
   <div class="card" style="padding:1.25rem;">
-    <span class="mono" style="color:var(--text-muted); font-size:0.75rem;">SHRINKAGE PARAMETER k</span>
+    <span class="mono" style="color:var(--text-muted); font-size:0.75rem;">CONFIDENCE WEIGHT (k)</span>
     <h2 class="serif-heading" style="font-size:2rem; margin:0.35rem 0;">{{ normalization.k_shrinkage }}</h2>
-    <span class="badge badge-emerald">Residual / Project Variance</span>
+    <span class="badge badge-emerald">Equalizes unequal review counts</span>
   </div>
 </div>
 
 <!-- Outlier & Integrity Alerts -->
 <div class="card" style="margin-bottom:2rem; border-left:3px solid var(--amber); background:var(--bg-secondary);">
-  <div style="display:flex; justify-content:space-between; align-items:center;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
     <div style="display:flex; gap:0.75rem; align-items:center;">
       <span class="badge badge-amber">Integrity Guard</span>
       <span style="font-size:0.9rem; font-weight:500;">
-        Zero-Variance & Strictness Normalization Active: 3 judges flagged with low score variance.
+        Judge Calibration Active: Corrects for strict vs. generous judges and stabilizes scores for projects with fewer reviews.
       </span>
     </div>
     <span class="mono" style="font-size:0.75rem; color:var(--text-muted);">
-      Additive offset model applied — no scores discarded
+      Zero scores discarded — all raw reviews preserved
     </span>
   </div>
 </div>
 
-<!-- Live Standings Table -->
+<!-- Live Standings Table: Official Judges' Leaderboard -->
 <div style="margin-bottom:2rem;">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-    <h3 class="serif-heading" style="font-size:1.4rem;">Defensible Leaderboard (Normalized Quality)</h3>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+    <div>
+      <h3 class="serif-heading" style="font-size:1.4rem; margin:0;">
+        Official Judges' Leaderboard <span style="font-size:0.85rem; color:var(--text-muted); font-weight:normal;">(Defensible Leaderboard · Normalized Quality)</span>
+      </h3>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin:0.25rem 0 0 0;">
+        Final scores calculated from judge rubrics, normalized so harsh judges don't unfairly penalize projects.
+      </p>
+    </div>
     <span class="mono" style="font-size:0.75rem; color:var(--text-muted);">
-      Ranking computed via alternating least squares with Efron-Morris shrinkage
+      Rankings calculated across {{ normalization.rankings|length }} projects
     </span>
   </div>
 
@@ -76,10 +83,10 @@
           <th>Rank</th>
           <th>Project Title</th>
           <th>Track</th>
-          <th>Reviews (n)</th>
-          <th>Raw Mean</th>
-          <th>Shrunk Score</th>
-          <th>Shrinkage (B_i)</th>
+          <th>Judge Reviews</th>
+          <th>Raw Avg</th>
+          <th>Final Fair Score (Shrunk Score)</th>
+          <th>Review Weight</th>
           <th>95% Confidence Band</th>
         </tr>
       </thead>
@@ -89,7 +96,7 @@
             <td class="mono" style="font-weight:600; color:var(--text-primary);">#{{ row.rank }}</td>
             <td style="font-weight:500; color:var(--text-primary);">{{ row.title }}</td>
             <td><span class="badge badge-purple">{{ row.track_id }}</span></td>
-            <td class="mono">{{ row.review_count }}</td>
+            <td class="mono">{{ row.review_count }} judges</td>
             <td class="mono">{{ "%.2f"|format(row.raw_mean) }}</td>
             <td class="mono" style="font-weight:600; color:var(--emerald);">
               {{ "%.3f"|format(row.final_score) }}
@@ -107,13 +114,15 @@
   </div>
 </div>
 
-<!-- Arena Leaderboard (Bradley-Terry Latent Skill) -->
+<!-- Head-to-Head Tie-Breaker Standings (Pairwise Arena) -->
 <div style="margin-bottom:2rem;">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
     <div>
-      <h3 class="serif-heading" style="font-size:1.4rem;">Arena Leaderboard (Bradley-Terry Latent Skill π_i)</h3>
-      <p style="color:var(--text-muted); font-size:0.85rem;">
-        Maximum Likelihood Estimation of latent skill scores from head-to-head pairwise matchups.
+      <h3 class="serif-heading" style="font-size:1.4rem; margin:0;">
+        Head-to-Head Tie-Breakers <span style="font-size:0.85rem; color:var(--text-muted); font-weight:normal;">— Arena Leaderboard (Bradley-Terry Latent Skill π_i)</span>
+      </h3>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin:0.25rem 0 0 0;">
+        Direct side-by-side matchups used to resolve ties between close competitors without subjective arguments.
       </p>
     </div>
     <span class="mono" style="font-size:0.75rem; color:var(--text-muted);">
@@ -129,7 +138,7 @@
           <th>Project ID</th>
           <th>Project Title</th>
           <th>Track</th>
-          <th>Bradley-Terry Skill Rating</th>
+          <th>Head-to-Head Rating (Bradley-Terry Skill Rating)</th>
         </tr>
       </thead>
       <tbody>
@@ -149,12 +158,63 @@
   </div>
 </div>
 
-<!-- Judge Coverage & Bias Matrix -->
+<!-- Community People's Choice Ballot Standings -->
+<div style="margin-bottom:2rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+    <div>
+      <h3 class="serif-heading" style="font-size:1.4rem; margin:0;">Community / People's Choice Ballot Standings</h3>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin:0.25rem 0 0 0;">
+        Public votes cast by visitors and attendees via randomized community ballots.
+      </p>
+    </div>
+    <span class="mono" style="font-size:0.75rem; color:var(--text-muted);">
+      {{ community_votes|length }} projects with public votes
+    </span>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Vote Rank</th>
+          <th>Project ID</th>
+          <th>Project Title</th>
+          <th>Track</th>
+          <th>Total Community Votes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if community_votes %}
+          {% for cv in community_votes %}
+          <tr>
+            <td class="mono" style="font-weight:600; color:var(--text-primary);">#{{ loop.index }}</td>
+            <td class="mono" style="color:var(--text-muted);">{{ cv.project_id }}</td>
+            <td style="font-weight:500; color:var(--text-primary);">{{ cv.title }}</td>
+            <td><span class="badge badge-accent">{{ cv.track_id or 'General' }}</span></td>
+            <td class="mono" style="font-weight:700; color:var(--emerald);">
+              {{ cv.vote_count }} votes
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="5" style="text-align:center; padding:1.5rem; color:var(--text-muted);">
+              No community votes recorded yet. Public voting is open at <a href="/vote" style="color:var(--emerald);">/vote</a>.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <div style="margin-bottom:2rem;">
   <div style="margin-bottom:1rem;">
-    <h3 class="serif-heading" style="font-size:1.4rem;">Judge Leniency Offset Matrix (β_j)</h3>
-    <p style="color:var(--text-muted); font-size:0.85rem;">
-      Positive values indicate generous scoring tendencies; negative values indicate strictness.
+    <h3 class="serif-heading" style="font-size:1.4rem; margin:0;">
+      Judge Grading Calibration <span style="font-size:0.85rem; color:var(--text-muted); font-weight:normal;">— Judge Leniency Offset Matrix (β_j)</span>
+    </h3>
+    <p style="color:var(--text-muted); font-size:0.85rem; margin:0.25rem 0 0 0;">
+      Identifies judge grading tendencies so projects evaluated by strict judges are not marked down unfairly.
     </p>
   </div>
 
@@ -162,10 +222,10 @@
     <table>
       <thead>
         <tr>
-          <th>Judge ID</th>
+          <th>Judge ID & Name</th>
           <th>Assigned Tracks</th>
-          <th>Leniency Offset (β)</th>
-          <th>Correction Status</th>
+          <th>Grading Tendency</th>
+          <th>Calibration Status</th>
         </tr>
       </thead>
       <tbody>
@@ -174,9 +234,9 @@
             <td class="mono" style="font-weight:600; color:var(--text-primary);">{{ jdg.id }} ({{ jdg.name }})</td>
             <td>{{ jdg.tracks }}</td>
             <td class="mono" style="color:{% if normalization.judge_biases[jdg.id] > 0 %}var(--emerald){% else %}var(--amber){% endif %};">
-              {% if normalization.judge_biases[jdg.id] > 0 %}+{% endif %}{{ normalization.judge_biases[jdg.id] or '0.00' }}
+              {% if normalization.judge_biases[jdg.id] > 0 %}+{{ normalization.judge_biases[jdg.id] }} (Generous){% elif normalization.judge_biases[jdg.id] < 0 %}{{ normalization.judge_biases[jdg.id] }} (Strict){% else %}0.00 (Neutral){% endif %}
             </td>
-            <td><span class="badge badge-emerald">Normalized</span></td>
+            <td><span class="badge badge-emerald">Calibrated</span></td>
           </tr>
         {% endfor %}
       </tbody>

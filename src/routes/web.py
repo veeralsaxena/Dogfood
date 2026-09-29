@@ -343,6 +343,15 @@ def war_room_view(request: Request, event: str = Query(None)):
 
     cursor.execute("SELECT winner_id, loser_id FROM pairwise_votes")
     pairwise_votes = [(r["winner_id"], r["loser_id"]) for r in cursor.fetchall()]
+
+    cursor.execute("""
+        SELECT b.project_id, p.title, p.track_id, COUNT(*) as vote_count
+        FROM ballots b
+        LEFT JOIN projects p ON b.project_id = p.id
+        GROUP BY b.project_id
+        ORDER BY vote_count DESC
+    """)
+    community_votes = [dict(r) for r in cursor.fetchall()]
     conn.close()
 
     normalization = run_normalization(raw_scores, projects, weights)
@@ -377,6 +386,7 @@ def war_room_view(request: Request, event: str = Query(None)):
             "stats": stats,
             "normalization": normalization,
             "arena_rankings": arena_rankings,
+            "community_votes": community_votes,
             "tracks": tracks,
             "invitations": invitations,
             "all_users": all_users,
