@@ -1,14 +1,15 @@
 import random
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from typing import List, Optional
 from src.database import get_db, log_audit
 from src.models import CommentCreate, CommunityVoteCreate, PairwiseVoteCreate
 from src.core.auth import get_current_user, require_auth, UserPrincipal
 from src.core.anti_abuse import voting_limiter
-from src.core.pairwise import solve_bradley_terry
+from src.core.pairwise import solve_bradley_terry, select_arena_pair
 
 router = APIRouter(prefix="/api", tags=["voting_and_community"])
+
 
 @router.get("/ballot")
 def get_randomized_ballot():
@@ -151,18 +152,44 @@ def post_comment(project_id: str, comment: CommentCreate, request: Request):
 # --- Bradley-Terry Pairwise Arena Endpoints ---
 
 @router.get("/arena/pair")
-def get_arena_pair():
-    """Returns two random projects for head-to-head comparison."""
+def get_arena_pair(track: Optional[str] = Query(None), event: Optional[str] = Query(None)):
+    """Returns two projects for head-to-head comparison with enriched metadata."""
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, title, summary, repo_url, track_id FROM projects WHERE is_draft = 0")
-    projects = [dict(r) for r in cursor.fetchall()]
+    query = """
+        SELECT p.id, p.event_id, p.title, p.summary, p.description, p.repo_url, p.demo_url,
+               p.track_id, t.name as track_name,
+               p.team_id, tm.name as team_name
+        FROM projects p
+        LEFT JOIN tracks t ON p.track_id = t.id
+        LEFT JOIN teams tm ON p.team_id = tm.id
+        WHERE p.is_draft = 0
+    """
+    params = []
+    if event:
+        query += " AND (p.event_id = ? OR p.event_id IS NULL)"
+        params.append(event)
+    cursor.execute(query, params)
+    raw_projects = cursor.fetchall()
     conn.close()
+
+    projects = []
+    for r in raw_projects:
+        item = dict(r)
+        item["track_name"] = item.get("track_name") or item.get("track_id") or ""
+        item["team_name"] = item.get("team_name") or item.get("team_id") or ""
+        item["description"] = item.get("description") or ""
+        item["demo_url"] = item.get("demo_url") or ""
+        projects.append(item)
 
     if len(projects) < 2:
         raise HTTPException(status_code=400, detail="Not enough projects for comparison")
 
-    pair = random.sample(projects, 2)
+    try:
+        pair = select_arena_pair(projects, track_filter=track)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     return {"project_a": pair[0], "project_b": pair[1]}
 
 @router.post("/arena/vote")
@@ -186,8 +213,14 @@ def cast_pairwise_vote(vote: PairwiseVoteCreate, user: UserPrincipal = Depends(r
     return {"status": "success", "winner": vote.winner_id, "loser": vote.loser_id}
 
 @router.get("/arena/rankings")
-def get_arena_rankings():
-    """Computes latent skill score using Bradley-Terry Maximum Likelihood Estimation."""
+def get_arena_rankings(user: UserPrincipal = Depends(require_auth)):
+    """Computes latent skill score using Bradley-Terry Maximum Likelihood Estimation. Restricted to organizers/admins."""
+    if user.role not in ("organizer", "admin"):
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: Arena rankings are sealed until judging closes to eliminate evaluator anchoring."
+        )
+
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT winner_id, loser_id FROM pairwise_votes")

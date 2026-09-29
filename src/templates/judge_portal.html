@@ -3,12 +3,11 @@
 {% block title %}Evaluation Workspace — Veritas Platform{% endblock %}
 
 {% block content %}
-<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 2.5rem; flex-wrap:wrap; gap:1rem;">
+<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 2rem; flex-wrap:wrap; gap:1rem;">
   <div>
-    <div class="serif-italic" style="color:var(--text-muted); font-size:1.1rem; margin-bottom:0.25rem;">[ EVALUATION WORKSPACE ]</div>
-    <h1 style="font-size:2.5rem; margin-bottom:0.5rem; font-family:var(--font-serif);">Assigned Evaluation Queue</h1>
-    <p style="color:var(--text-muted); font-size:0.95rem; max-width:700px;">
-      Evaluate assigned submissions across weighted criteria. Evaluations are isolated at the API layer: your scorecards remain strictly confidential until results are published.
+    <h1 style="font-size:2.2rem; margin-bottom:0.35rem; font-family:var(--font-serif);">Evaluation Queue</h1>
+    <p style="color:var(--text-muted); font-size:0.9rem; max-width:700px; margin:0;">
+      Evaluate assigned submissions across weighted criteria. Evaluations remain strictly confidential.
     </p>
   </div>
 
@@ -23,11 +22,16 @@
   <div style="margin-bottom:2rem;">
     <h3 class="serif-heading" style="font-size:1.4rem; margin-bottom:1rem;">Select Project for Scoring</h3>
     <div style="display:flex; flex-direction:column; gap:1.25rem;">
-      {% for p in projects[:6] %}
+      {% for p in projects %}
         <div class="card" style="padding:1.5rem;">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
             <div>
               <span class="badge badge-purple" style="margin-bottom:0.35rem;">{{ p.track_id }}</span>
+              {% if p.evaluation %}
+                <span class="badge badge-emerald" id="eval-badge-{{ p.id }}" style="margin-left:0.5rem; font-size:0.75rem;">✓ Evaluated (Score: {{ '%.2f'|format(p.evaluation.composite_score) }} / 5.00)</span>
+              {% else %}
+                <span class="badge badge-emerald" id="eval-badge-{{ p.id }}" style="margin-left:0.5rem; font-size:0.75rem; display:none;"></span>
+              {% endif %}
               <h3 class="serif-heading" style="font-size:1.3rem;">{{ p.title }}</h3>
               <p style="color:var(--text-secondary); font-size:0.85rem; margin-top:0.25rem;">{{ p.summary }}</p>
             </div>
@@ -45,12 +49,13 @@
                 <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
                   FUNCTIONALITY (40%)
                 </label>
+                {% set cur_func = p.evaluation.criteria.get('functionality', 4)|int if (p.evaluation and p.evaluation.criteria and 'functionality' in p.evaluation.criteria) else 4 %}
                 <select id="crit-func-{{ p.id }}" class="search-input" style="width:100%;">
-                  <option value="5">5 — Exceptional</option>
-                  <option value="4" selected>4 — Strong</option>
-                  <option value="3">3 — Adequate</option>
-                  <option value="2">2 — Incomplete</option>
-                  <option value="1">1 — Deficient</option>
+                  <option value="5" {% if cur_func == 5 %}selected{% endif %}>5 — Exceptional</option>
+                  <option value="4" {% if cur_func == 4 %}selected{% endif %}>4 — Strong</option>
+                  <option value="3" {% if cur_func == 3 %}selected{% endif %}>3 — Adequate</option>
+                  <option value="2" {% if cur_func == 2 %}selected{% endif %}>2 — Incomplete</option>
+                  <option value="1" {% if cur_func == 1 %}selected{% endif %}>1 — Deficient</option>
                 </select>
               </div>
 
@@ -58,12 +63,13 @@
                 <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
                   CODE QUALITY (30%)
                 </label>
+                {% set cur_qual = p.evaluation.criteria.get('quality', 4)|int if (p.evaluation and p.evaluation.criteria and 'quality' in p.evaluation.criteria) else 4 %}
                 <select id="crit-qual-{{ p.id }}" class="search-input" style="width:100%;">
-                  <option value="5">5 — Production</option>
-                  <option value="4" selected>4 — Clean</option>
-                  <option value="3">3 — Readable</option>
-                  <option value="2">2 — Fragile</option>
-                  <option value="1">1 — Unmaintainable</option>
+                  <option value="5" {% if cur_qual == 5 %}selected{% endif %}>5 — Production</option>
+                  <option value="4" {% if cur_qual == 4 %}selected{% endif %}>4 — Clean</option>
+                  <option value="3" {% if cur_qual == 3 %}selected{% endif %}>3 — Readable</option>
+                  <option value="2" {% if cur_qual == 2 %}selected{% endif %}>2 — Fragile</option>
+                  <option value="1" {% if cur_qual == 1 %}selected{% endif %}>1 — Unmaintainable</option>
                 </select>
               </div>
 
@@ -71,12 +77,13 @@
                 <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
                   INNOVATION (20%)
                 </label>
+                {% set cur_innov = p.evaluation.criteria.get('innovation', 3)|int if (p.evaluation and p.evaluation.criteria and 'innovation' in p.evaluation.criteria) else 3 %}
                 <select id="crit-innov-{{ p.id }}" class="search-input" style="width:100%;">
-                  <option value="5">5 — Novel Paradigm</option>
-                  <option value="4">4 — Creative</option>
-                  <option value="3" selected>3 — Standard</option>
-                  <option value="2">2 — Derivative</option>
-                  <option value="1">1 — Trivial</option>
+                  <option value="5" {% if cur_innov == 5 %}selected{% endif %}>5 — Novel Paradigm</option>
+                  <option value="4" {% if cur_innov == 4 %}selected{% endif %}>4 — Creative</option>
+                  <option value="3" {% if cur_innov == 3 %}selected{% endif %}>3 — Standard</option>
+                  <option value="2" {% if cur_innov == 2 %}selected{% endif %}>2 — Derivative</option>
+                  <option value="1" {% if cur_innov == 1 %}selected{% endif %}>1 — Trivial</option>
                 </select>
               </div>
 
@@ -84,26 +91,27 @@
                 <label class="mono" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">
                   DESIGN / UX (10%)
                 </label>
+                {% set cur_des = p.evaluation.criteria.get('design', 4)|int if (p.evaluation and p.evaluation.criteria and 'design' in p.evaluation.criteria) else 4 %}
                 <select id="crit-des-{{ p.id }}" class="search-input" style="width:100%;">
-                  <option value="5">5 — Refined</option>
-                  <option value="4" selected>4 — Intuitive</option>
-                  <option value="3">3 — Usable</option>
-                  <option value="2">2 — Rough</option>
-                  <option value="1">1 — Broken</option>
+                  <option value="5" {% if cur_des == 5 %}selected{% endif %}>5 — Refined</option>
+                  <option value="4" {% if cur_des == 4 %}selected{% endif %}>4 — Intuitive</option>
+                  <option value="3" {% if cur_des == 3 %}selected{% endif %}>3 — Usable</option>
+                  <option value="2" {% if cur_des == 2 %}selected{% endif %}>2 — Rough</option>
+                  <option value="1" {% if cur_des == 1 %}selected{% endif %}>1 — Broken</option>
                 </select>
               </div>
             </div>
 
             <div style="margin-bottom:1rem;">
-              <input type="text" id="comment-{{ p.id }}" class="search-input" style="width:100%;" placeholder="Confidential review feedback (visible only to organizers & author post-freeze)...">
+              <input type="text" id="comment-{{ p.id }}" class="search-input" style="width:100%;" value="{{ p.evaluation.comment if (p.evaluation and p.evaluation.comment) else '' }}" placeholder="Confidential review feedback (visible only to organizers & author post-freeze)...">
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <div style="font-family:var(--font-mono); font-size:0.9rem;">
-                Weighted Score: <strong id="weighted-total-{{ p.id }}" style="color:var(--accent);">3.80</strong> <span style="color:var(--text-muted); font-size:0.75rem;">/ 5.00</span>
+                Weighted Score: <strong id="weighted-total-{{ p.id }}" style="color:var(--accent);">{{ '%.2f'|format(p.evaluation.composite_score) if p.evaluation else "3.80" }}</strong> <span style="color:var(--text-muted); font-size:0.75rem;">/ 5.00</span>
               </div>
               <button type="submit" class="btn btn-primary" id="btn-score-{{ p.id }}">
-                Save Evaluation Score
+                {% if p.evaluation %}✓ Evaluated — Update Score{% else %}Save Evaluation Score{% endif %}
               </button>
             </div>
           </form>
@@ -126,7 +134,7 @@ function updateWeightedScore(projectId) {
 
 // Attach listeners
 document.addEventListener("DOMContentLoaded", () => {
-  {% for p in projects[:6] %}
+  {% for p in projects %}
     ['crit-func-{{ p.id }}', 'crit-qual-{{ p.id }}', 'crit-innov-{{ p.id }}', 'crit-des-{{ p.id }}'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('change', () => updateWeightedScore('{{ p.id }}'));
@@ -147,15 +155,16 @@ async function handleScoreSubmit(e, projectId) {
   };
   const comment = document.getElementById(`comment-${projectId}`).value;
 
-  const token = localStorage.getItem('auth_token') || 'Token judgea0000000000000000000000000000000000';
+  const headers = { 'Content-Type': 'application/json' };
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    headers['Authorization'] = token.startsWith('Token ') || token.startsWith('Bearer ') ? token : `Token ${token}`;
+  }
 
   try {
     const res = await fetch('/api/judge/scores', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': token
-      },
+      headers: headers,
       body: JSON.stringify({
         project_id: projectId,
         criteria: criteria,
@@ -163,9 +172,23 @@ async function handleScoreSubmit(e, projectId) {
       })
     });
 
+    if (res.status === 401) {
+      alert('Authentication required. Please sign in to continue.');
+      window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+      btn.innerHTML = 'Save Evaluation Score';
+      return;
+    }
+
     if (res.ok) {
       btn.innerHTML = '✓ Evaluation Saved';
       btn.classList.add('badge-emerald');
+      const totalEl = document.getElementById(`weighted-total-${projectId}`);
+      const scoreVal = totalEl ? totalEl.innerText : '0.00';
+      const badge = document.getElementById(`eval-badge-${projectId}`);
+      if (badge) {
+        badge.innerText = `✓ Evaluated (Score: ${scoreVal} / 5.00)`;
+        badge.style.display = 'inline-block';
+      }
     } else {
       const err = await res.json();
       alert('Error saving score: ' + (err.detail || 'Failed'));

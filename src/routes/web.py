@@ -9,8 +9,8 @@ from pydantic import BaseModel
 from src.database import get_db
 from src.config import BASE_DIR, TEST_TOKENS
 from src.core.auth import get_current_user, authenticate_user
-from src.core.normalization import run_normalization
-from src.core.pairwise import solve_bradley_terry
+from src.core.normalization import run_normalization, compute_composite_score
+from src.core.pairwise import solve_bradley_terry, select_arena_pair
 from src.core.crypto import get_or_create_keys
 
 router = APIRouter(tags=["web_pages"])
@@ -341,9 +341,25 @@ def war_room_view(request: Request, event: str = Query(None)):
     for u in all_users:
         u["tracks"] = json.loads(u["tracks"]) if u.get("tracks") else []
 
+    cursor.execute("SELECT winner_id, loser_id FROM pairwise_votes")
+    pairwise_votes = [(r["winner_id"], r["loser_id"]) for r in cursor.fetchall()]
     conn.close()
 
     normalization = run_normalization(raw_scores, projects, weights)
+
+    bt_scores = solve_bradley_terry(pairwise_votes)
+    proj_dict = {p["id"]: p for p in projects}
+    sorted_ranks = sorted(bt_scores.items(), key=lambda item: item[1], reverse=True)
+    arena_rankings = [
+        {
+            "rank": rank,
+            "project_id": pid,
+            "title": proj_dict.get(pid, {}).get("title", pid),
+            "track_id": proj_dict.get(pid, {}).get("track", proj_dict.get(pid, {}).get("track_id", "")),
+            "skill_score": score
+        }
+        for rank, (pid, score) in enumerate(sorted_ranks, 1)
+    ]
 
     stats = {
         "total_projects": len(projects),
@@ -360,6 +376,7 @@ def war_room_view(request: Request, event: str = Query(None)):
             "judges": judges,
             "stats": stats,
             "normalization": normalization,
+            "arena_rankings": arena_rankings,
             "tracks": tracks,
             "invitations": invitations,
             "all_users": all_users,
@@ -370,43 +387,83 @@ def war_room_view(request: Request, event: str = Query(None)):
     )
 
 @router.get("/arena", response_class=HTMLResponse)
-def arena_view(request: Request, event: str = Query(None)):
+def arena_view(request: Request, event: str = Query(None), track: str = Query(None)):
+    user = get_current_user(request)
+    active_event = get_active_event_context(request, event)
+
     conn = get_db()
     cursor = conn.cursor()
 
-    proj_query = "SELECT id, title, summary, repo_url, track_id FROM projects WHERE is_draft = 0"
+    track_query = "SELECT id, name FROM tracks"
+    track_params = []
+    if active_event:
+        track_query += " WHERE event_id = ?"
+        track_params.append(active_event["id"])
+    track_query += " ORDER BY id ASC"
+    cursor.execute(track_query, track_params)
+    tracks = [dict(r) for r in cursor.fetchall()]
+    if not tracks:
+        cursor.execute("SELECT id, name FROM tracks ORDER BY id ASC LIMIT 10")
+        tracks = [dict(r) for r in cursor.fetchall()]
+
+    proj_query = """
+        SELECT p.id, p.event_id, p.title, p.summary, p.description, p.repo_url, p.demo_url,
+               p.track_id, t.name as track_name,
+               p.team_id, tm.name as team_name
+        FROM projects p
+        LEFT JOIN tracks t ON p.track_id = t.id
+        LEFT JOIN teams tm ON p.team_id = tm.id
+        WHERE p.is_draft = 0
+    """
     proj_params = []
     if event:
-        proj_query += " AND (event_id = ? OR event_id IS NULL)"
+        proj_query += " AND (p.event_id = ? OR p.event_id IS NULL)"
         proj_params.append(event)
     cursor.execute(proj_query, proj_params)
-    projects = [dict(r) for r in cursor.fetchall()]
+    raw_projects = cursor.fetchall()
 
-    cursor.execute("SELECT winner_id, loser_id FROM pairwise_votes")
-    votes = [(r["winner_id"], r["loser_id"]) for r in cursor.fetchall()]
-    conn.close()
+    projects = []
+    for r in raw_projects:
+        item = dict(r)
+        item["track_name"] = item.get("track_name") or item.get("track_id") or ""
+        item["team_name"] = item.get("team_name") or item.get("team_id") or ""
+        item["description"] = item.get("description") or ""
+        item["demo_url"] = item.get("demo_url") or ""
+        projects.append(item)
 
     pair = None
     if len(projects) >= 2:
-        sampled = random.sample(projects, 2)
-        pair = {"project_a": sampled[0], "project_b": sampled[1]}
+        try:
+            sampled = select_arena_pair(projects, track_filter=track)
+            pair = {"project_a": sampled[0], "project_b": sampled[1]}
+        except ValueError:
+            pair = None
 
-    bt_scores = solve_bradley_terry(votes)
-    proj_dict = {p["id"]: p for p in projects}
-    sorted_ranks = sorted(bt_scores.items(), key=lambda item: item[1], reverse=True)
-
+    show_leaderboard = bool(user and user.role in ("organizer", "admin"))
     rankings = []
-    for rank, (pid, score) in enumerate(sorted_ranks, 1):
-        p = proj_dict.get(pid, {})
-        rankings.append({
-            "rank": rank,
-            "project_id": pid,
-            "title": p.get("title", pid),
-            "skill_score": score
-        })
+    user_vote_count = 0
 
-    user = get_current_user(request)
-    active_event = get_active_event_context(request, event)
+    if show_leaderboard:
+        cursor.execute("SELECT winner_id, loser_id FROM pairwise_votes")
+        votes = [(r["winner_id"], r["loser_id"]) for r in cursor.fetchall()]
+        bt_scores = solve_bradley_terry(votes)
+        proj_dict = {p["id"]: p for p in projects}
+        sorted_ranks = sorted(bt_scores.items(), key=lambda item: item[1], reverse=True)
+        for rank, (pid, score) in enumerate(sorted_ranks, 1):
+            p = proj_dict.get(pid, {})
+            rankings.append({
+                "rank": rank,
+                "project_id": pid,
+                "title": p.get("title", pid),
+                "track_id": p.get("track_id", ""),
+                "skill_score": score
+            })
+    else:
+        if user:
+            cursor.execute("SELECT COUNT(*) FROM pairwise_votes WHERE judge_id = ?", (user.id,))
+            user_vote_count = cursor.fetchone()[0]
+
+    conn.close()
 
     return templates.TemplateResponse(
         request=request,
@@ -415,8 +472,12 @@ def arena_view(request: Request, event: str = Query(None)):
             "active_page": "arena",
             "pair": pair,
             "rankings": rankings,
+            "show_leaderboard": show_leaderboard,
+            "user_vote_count": user_vote_count,
             "user": user,
-            "active_event": active_event
+            "active_event": active_event,
+            "tracks": tracks,
+            "selected_track": track
         }
     )
 
@@ -435,10 +496,48 @@ def judge_portal_view(request: Request, event: str = Query(None)):
         proj_params.append(event)
     cursor.execute(proj_query, proj_params)
     projects = [dict(r) for r in cursor.fetchall()]
-    conn.close()
+
+    if user:
+        cursor.execute("SELECT tracks FROM users WHERE id = ?", (user.id,))
+        u_row = cursor.fetchone()
+        if u_row and u_row["tracks"]:
+            try:
+                db_tracks = json.loads(u_row["tracks"]) if isinstance(u_row["tracks"], str) else u_row["tracks"]
+                if db_tracks:
+                    user.tracks = db_tracks
+            except Exception:
+                pass
 
     if user and user.tracks:
-        projects.sort(key=lambda p: 0 if p.get("track_id") in user.tracks else 1)
+        assigned = [p for p in projects if p.get("track_id") in user.tracks]
+        if assigned:
+            projects = assigned
+
+    user_evaluations = {}
+    if user:
+        cursor.execute("SELECT project_id, criteria, comment FROM scores WHERE judge_id = ?", (user.id,))
+        weights = None
+        if active_event and active_event.get("weights"):
+            try:
+                weights = json.loads(active_event["weights"]) if isinstance(active_event["weights"], str) else active_event["weights"]
+            except Exception:
+                weights = None
+
+        for r in cursor.fetchall():
+            crit_raw = r["criteria"]
+            crit = json.loads(crit_raw) if isinstance(crit_raw, str) else (crit_raw or {})
+            comment = r["comment"] or ""
+            comp = compute_composite_score(crit, weights)
+            user_evaluations[r["project_id"]] = {
+                "composite_score": comp,
+                "criteria": crit,
+                "comment": comment
+            }
+
+    for p in projects:
+        p["evaluation"] = user_evaluations.get(p["id"])
+
+    conn.close()
 
     return templates.TemplateResponse(
         request=request,

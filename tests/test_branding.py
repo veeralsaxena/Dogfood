@@ -73,11 +73,16 @@ def test_dynamic_certificate_branding():
     assert "Massachusetts Institute of Technology" in svg_text
     assert "#a31f34" in svg_text or "#A31F34" in svg_text.upper()
 
-def test_white_label_css_injection_in_html():
-    """Active event brand colors and crest are injected into the HTML response."""
+def test_platform_branding_stability():
+    """Platform navbar retains stable 'VERITAS' identity even when visiting branded events."""
     res = client.get("/projects?event=evt_03")
     assert res.status_code == 200
     html = res.text
-    assert "--accent: #a31f34" in html
-    assert "MIT TECHFAIR" in html
-    assert "ai grand prix 2026" in html
+    assert "VERITAS" in html
+
+def test_submit_page_branding_stability():
+    """Visiting /submit retains stable 'VERITAS' navbar and clean layout."""
+    res = client.get("/submit")
+    assert res.status_code == 200
+    html = res.text
+    assert "VERITAS" in html

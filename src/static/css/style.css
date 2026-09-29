@@ -285,19 +285,19 @@ h1, h2, h3, h4, .serif-heading {
   box-shadow: 0 0 6px var(--emerald);
 }
 
-/* Navigation Bar (Raptors.dev Editorial Design) */
+/* Navigation Bar (Clean Minimalist Design) */
 .navbar {
   border-bottom: 1px solid var(--border);
   background: var(--bg-surface);
   position: sticky;
   top: 0;
   z-index: 100;
-  padding: 0 2rem;
-  height: 64px;
+  padding: 0 1.5rem;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 [data-theme="light"] .navbar {
@@ -309,8 +309,9 @@ h1, h2, h3, h4, .serif-heading {
 .nav-left {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .brand-wrapper {
@@ -325,43 +326,38 @@ h1, h2, h3, h4, .serif-heading {
 .brand-title {
   font-family: var(--font-serif);
   font-size: 1.15rem;
-  letter-spacing: 0.06em;
-  font-weight: 600;
+  letter-spacing: 0.08em;
+  font-weight: 700;
   text-transform: uppercase;
-  display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
-}
-
-.brand-tagline {
-  font-family: var(--font-sans);
-  font-style: italic;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  font-weight: 400;
-  text-transform: lowercase;
-  letter-spacing: 0.02em;
-}
-
-.nav-event-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  padding: 0.25rem 0.65rem;
-  border-radius: 9999px;
-  font-size: 0.74rem;
-  font-family: var(--font-mono);
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: all 0.15s ease;
   white-space: nowrap;
 }
 
-.nav-event-pill:hover {
+.nav-event-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  text-decoration: none;
+  max-width: 170px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.nav-event-chip:hover {
   border-color: var(--border-light);
   color: var(--text-primary);
+}
+
+.nav-event-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav-event-dot {
@@ -378,13 +374,13 @@ h1, h2, h3, h4, .serif-heading {
   align-items: center;
   flex: 1;
   justify-content: center;
-  overflow: hidden;
+  min-width: 0;
 }
 
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 1.35rem;
+  gap: 1.5rem;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -393,10 +389,10 @@ h1, h2, h3, h4, .serif-heading {
 .nav-link {
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   white-space: nowrap !important;
   padding: 0.4rem 0.2rem;
   position: relative;
@@ -558,8 +554,11 @@ h1, h2, h3, h4, .serif-heading {
   display: flex;
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 768px) {
   .nav-center {
+    display: none;
+  }
+  .nav-event-chip {
     display: none;
   }
   .mobile-toggle {
@@ -567,17 +566,17 @@ h1, h2, h3, h4, .serif-heading {
     align-items: center;
     justify-content: center;
   }
-  .brand-tagline {
-    display: none;
+  .navbar {
+    padding: 0 1rem;
   }
 }
 
-@media (max-width: 640px) {
-  .nav-event-pill {
+@media (min-width: 769px) {
+  .mobile-toggle {
     display: none;
   }
-  .navbar {
-    padding: 0 1rem;
+  .mobile-drawer {
+    display: none !important;
   }
 }
 

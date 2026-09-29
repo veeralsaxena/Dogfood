@@ -3,18 +3,11 @@
 {% block title %}Operations Command Center — Veritas Platform{% endblock %}
 
 {% block content %}
-<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2rem;">
+<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2rem; flex-wrap:wrap; gap:1.25rem;">
   <div>
-    <div class="section-marker">
-      <span class="num">02</span>
-      <span class="sep"></span>
-      <span>ORGANIZER WAR ROOM // CONTROL CONSOLE</span>
-    </div>
-    <h1 class="serif-heading" style="font-size:2.25rem;">
-      Live Judging Progress & <span class="serif-italic">Bias-Normalized</span> Standings
-    </h1>
-    <p style="color:var(--text-secondary); margin-top:0.35rem;">
-      Cross-judge fixed effects model with Empirical Bayes shrinkage applied across {{ projects|length }} projects.
+    <h1 style="font-size:2.2rem; margin:0 0 0.4rem 0; font-family:var(--font-serif);">Organizer War Room</h1>
+    <p style="color:var(--text-muted); font-size:0.9rem; margin:0;">
+      Real-time judging progress, review coverage matrix, and bias-normalized standings across {{ projects|length }} projects.
     </p>
   </div>
 
@@ -106,6 +99,48 @@
             </td>
             <td class="mono" style="font-size:0.75rem; color:var(--text-muted);">
               [{{ "%.2f"|format(row.ci[0]) }} — {{ "%.2f"|format(row.ci[1]) }}]
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Arena Leaderboard (Bradley-Terry Latent Skill) -->
+<div style="margin-bottom:2rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <div>
+      <h3 class="serif-heading" style="font-size:1.4rem;">Arena Leaderboard (Bradley-Terry Latent Skill π_i)</h3>
+      <p style="color:var(--text-muted); font-size:0.85rem;">
+        Maximum Likelihood Estimation of latent skill scores from head-to-head pairwise matchups.
+      </p>
+    </div>
+    <span class="mono" style="font-size:0.75rem; color:var(--text-muted);">
+      {{ arena_rankings|length }} ranked submissions
+    </span>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Arena Rank</th>
+          <th>Project ID</th>
+          <th>Project Title</th>
+          <th>Track</th>
+          <th>Bradley-Terry Skill Rating</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in arena_rankings %}
+          <tr>
+            <td class="mono" style="font-weight:600; color:var(--text-primary);">#{{ row.rank }}</td>
+            <td class="mono" style="color:var(--text-muted);">{{ row.project_id }}</td>
+            <td style="font-weight:500; color:var(--text-primary);">{{ row.title }}</td>
+            <td><span class="badge badge-purple">{{ row.track_id }}</span></td>
+            <td class="mono" style="font-weight:600; color:var(--emerald);">
+              {{ row.skill_score }} / 100
             </td>
           </tr>
         {% endfor %}
@@ -380,13 +415,16 @@ async function handleGenerateInvite(e) {
 
   const tracks = (role === 'judge' && track) ? [track] : [];
 
+  const headers = { 'Content-Type': 'application/json' };
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    headers['Authorization'] = token.startsWith('Token ') || token.startsWith('Bearer ') ? token : `Token ${token}`;
+  }
+
   try {
     const res = await fetch('/api/organizer/invites', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': localStorage.getItem('auth_token') || 'Token organizer0000000000000000000000000000000'
-      },
+      headers: headers,
       body: JSON.stringify({
         role: role,
         email: email || null,
@@ -423,13 +461,15 @@ async function resetPassword(userId, email) {
   if (!confirm(`Are you sure you want to reset password for ${email} to default (password123)?`)) {
     return;
   }
+  const headers = { 'Content-Type': 'application/json' };
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    headers['Authorization'] = token.startsWith('Token ') || token.startsWith('Bearer ') ? token : `Token ${token}`;
+  }
   try {
     const res = await fetch(`/api/organizer/users/${userId}/reset-password`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': localStorage.getItem('auth_token') || 'Token organizer0000000000000000000000000000000'
-      },
+      headers: headers,
       body: JSON.stringify({ new_password: 'password123' })
     });
     const data = await res.json();
@@ -448,12 +488,16 @@ async function publishResults() {
   btn.innerHTML = 'Signing with Ed25519...';
   btn.disabled = true;
 
+  const headers = {};
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    headers['Authorization'] = token.startsWith('Token ') || token.startsWith('Bearer ') ? token : `Token ${token}`;
+  }
+
   try {
     const res = await fetch('/api/export/publish', {
       method: 'POST',
-      headers: {
-        'Authorization': localStorage.getItem('auth_token') || 'Token organizer0000000000000000000000000000000'
-      }
+      headers: headers
     });
 
     if (res.ok) {

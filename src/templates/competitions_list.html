@@ -3,29 +3,22 @@
 {% block title %}Competitions & Challenges — Veritas Platform{% endblock %}
 
 {% block content %}
-<div class="hero" style="padding-top:2rem; padding-bottom:2.5rem; text-align:left; max-width:100%; margin:0;">
-  <div class="section-marker">
-    <span class="num">03</span>
-    <span class="sep"></span>
-    <span>FLAGSHIP DIRECTORY · ACTIVE COMPETITIONS</span>
-  </div>
-  <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:1.5rem; margin-top:0.5rem;">
+<div style="margin-bottom:2rem; padding-top:1rem;">
+  <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:1.5rem;">
     <div>
-      <h1 class="hero-title" style="font-size:3rem; margin:0 0 0.75rem 0; line-height:1.15;">
-        Active Competitions &amp; <span class="serif-italic">Championships</span>.
-      </h1>
-      <p class="hero-subtitle" style="margin:0; max-width:760px; font-size:1.05rem;">
-        10–12 flagship engineering hackathons organized annually by Hackathon Raptors Fellowship, featuring rigorous peer review, blind judging isolation, and cryptographically verifiable evaluation.
+      <h1 style="font-size:2.2rem; font-family:var(--font-serif); margin:0 0 0.4rem 0;">Active Competitions & Hackathons</h1>
+      <p style="color:var(--text-muted); font-size:0.95rem; margin:0; max-width:680px;">
+        Browse active hackathons, review deadlines, join teams, and submit project entries.
       </p>
     </div>
     <div style="display:flex; gap:0.75rem; align-items:center;">
       {% if user and user.role in ('organizer', 'admin') %}
-      <a href="/organizer/competitions" class="btn btn-primary" style="padding:0.65rem 1.35rem;">
-        + Provision Competition
+      <a href="/organizer/competitions" class="btn btn-primary" style="padding:0.6rem 1.25rem;">
+        + Create Competition
       </a>
       {% else %}
-      <button onclick="openJoinModal()" class="btn btn-primary" style="padding:0.65rem 1.35rem;">
-        + Join with Code →
+      <button onclick="openJoinModal()" class="btn btn-primary" style="padding:0.6rem 1.25rem;">
+        + Join with Code
       </button>
       {% endif %}
     </div>

@@ -205,13 +205,15 @@ function copyJoinLink() {
 }
 
 async function updateEventStatus(eventId, newStatus) {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    headers['Authorization'] = token.startsWith('Token ') || token.startsWith('Bearer ') ? token : `Token ${token}`;
+  }
   try {
     const res = await fetch(`/api/competitions/${eventId}/status`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': localStorage.getItem('auth_token') || 'Token organizer0000000000000000000000000000000'
-      },
+      headers: headers,
       body: JSON.stringify({ status: newStatus })
     });
     if (res.ok) {
@@ -244,13 +246,16 @@ async function handleCreateCompetition(e) {
 
   const isoDeadline = new Date(deadline).toISOString();
 
+  const headers = { 'Content-Type': 'application/json' };
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    headers['Authorization'] = token.startsWith('Token ') || token.startsWith('Bearer ') ? token : `Token ${token}`;
+  }
+
   try {
     const res = await fetch('/api/competitions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': localStorage.getItem('auth_token') || 'Token organizer0000000000000000000000000000000'
-      },
+      headers: headers,
       body: JSON.stringify({
         name: name,
         slug: slug || null,

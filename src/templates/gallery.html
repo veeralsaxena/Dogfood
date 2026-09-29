@@ -3,43 +3,23 @@
 {% block title %}Public Showcase — Veritas Platform{% endblock %}
 
 {% block content %}
-<!-- Hero Header -->
-<div class="hero" style="padding-top:2rem; padding-bottom:2rem;">
-  <div class="section-marker">
-    <span class="num">01</span>
-    <span class="sep"></span>
-    <span>PUBLIC SUBMISSIONS SHOWCASE</span>
-  </div>
-  <h1 class="hero-title">
-    Software built for <span class="serif-italic">rigorous</span> evaluation.
-  </h1>
-  <p class="hero-subtitle">
-    Explore all {{ projects|length }} verified submissions across 8 engineering tracks. 
-    Every score is normalized with empirical Bayesian shrinkage and cryptographically verifiable.
+<!-- Clean Header -->
+<div style="margin-bottom:1.5rem; padding-top:1rem;">
+  <h1 style="font-size:2rem; font-family:var(--font-serif); margin:0 0 0.4rem 0;">Projects Showcase</h1>
+  <p style="color:var(--text-muted); font-size:0.9rem; margin:0;">
+    Explore {{ projects|length }} verified submissions across competitions and engineering tracks.
   </p>
 </div>
 
 <!-- Competition Filter Pills -->
-<div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
+<div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1.25rem; flex-wrap:wrap;">
   <span style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); font-weight:600;">Competition:</span>
   <a href="/projects{% if selected_track %}?track={{ selected_track }}{% endif %}" class="pill-btn {% if not selected_event %}active{% endif %}">All Competitions</a>
   {% for ev in all_events %}
     <a href="/projects?event={{ ev.id }}{% if selected_track %}&track={{ selected_track }}{% endif %}" class="pill-btn {% if selected_event == ev.id %}active{% endif %}">
-      {{ ev.name }} {% if ev.id == 'evt_01' %}<span style="opacity:0.6; font-size:0.7rem;">(Fixtures)</span>{% elif ev.id == 'evt_02' %}<span style="color:#10b981; font-size:0.7rem;">(Live)</span>{% endif %}
+      {{ ev.name }}
     </a>
   {% endfor %}
-</div>
-
-<!-- Test Fixtures Explanatory Banner -->
-<div style="background:var(--bg-secondary); border:1px solid var(--border); padding:0.65rem 1rem; border-radius:4px; margin-bottom:1.25rem; font-size:0.8rem; color:var(--text-secondary); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-  <div>
-    <strong>Dataset Note:</strong> The projects labeled <code>evt_01</code> are the official benchmark test fixtures (required by <code>spec/run.py</code>). New submissions are active under <code>Raptors AI Challenge 2026</code>.
-  </div>
-  {% if selected_event != 'evt_02' %}
-  <a href="/projects?event=evt_02" class="btn btn-outline" style="padding:0.25rem 0.6rem; font-size:0.75rem; white-space:nowrap;">
-    Switch to Live Challenge →
-  </a>
-  {% endif %}
 </div>
 
 <!-- Search & Track Filters -->

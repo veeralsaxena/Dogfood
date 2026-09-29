@@ -3,17 +3,10 @@
 {% block title %}Competition Settings — Veritas Platform{% endblock %}
 
 {% block content %}
-<div class="hero" style="padding-top:2rem; padding-bottom:2rem;">
-  <div class="section-marker">
-    <span class="num">08</span>
-    <span class="sep"></span>
-    <span>ORGANIZER EVENT CONFIGURATION</span>
-  </div>
-  <h1 class="hero-title">
-    Configure event <span class="serif-italic">parameters</span>.
-  </h1>
-  <p class="hero-subtitle">
-    Control submission deadlines, dynamic scoring rubric weights, prize tracks, and event-driven webhooks.
+<div style="margin-bottom:2rem; padding-top:1rem; text-align:center;">
+  <h1 style="font-size:2.2rem; margin:0 0 0.4rem 0; font-family:var(--font-serif);">Competition Settings & Rubric</h1>
+  <p style="color:var(--text-muted); font-size:0.9rem; margin:0 auto; max-width:640px;">
+    Configure deadlines, rubric criteria weights, evaluation tracks, and webhook notifications.
   </p>
 </div>
 
@@ -131,13 +124,16 @@ async function saveEventSettings() {
     }
   };
 
+  const headers = { 'Content-Type': 'application/json' };
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    headers['Authorization'] = token.startsWith('Token ') || token.startsWith('Bearer ') ? token : `Token ${token}`;
+  }
+
   try {
     const res = await fetch('/api/event/settings', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Token organizer0000000000000000000000000000000'
-      },
+      headers: headers,
       body: JSON.stringify(payload)
     });
 
